@@ -249,6 +249,8 @@ static uint32_t load_atom_extract_al4x2(void *pv)
     }
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 /**
  * load_atom_extract_al8x2:
  * @pv: host address
@@ -271,6 +273,8 @@ static uint64_t load_atom_extract_al8x2(void *pv)
         return (a >> sh) | (b << (-sh & 63));
     }
 }
+
+#endif
 
 /**
  * load_atom_extract_al8_or_exit:
@@ -554,6 +558,17 @@ static uint64_t load_atom_8(CPUArchState *env, uintptr_t ra,
 
 #endif
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static Int128 load_atom_16(CPUArchState *env, uintptr_t ra,
+                           void *pv, MemOp memop) {
+    Int128 r;
+    __builtin_memcpy(&r, pv, 16);
+    return r;
+}
+
+#else
+
 /**
  * load_atom_16:
  * @p: host address
@@ -611,6 +626,8 @@ static Int128 load_atom_16(CPUArchState *env, uintptr_t ra,
     }
     return int128_make128(HOST_BIG_ENDIAN ? b : a, HOST_BIG_ENDIAN ? a : b);
 }
+
+#endif
 
 /**
  * store_atomic2:
@@ -1061,6 +1078,15 @@ static void store_atom_8(CPUArchState *env, uintptr_t ra,
     cpu_loop_exit_atomic(env_cpu(env), ra);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static void store_atom_16(CPUArchState *env, uintptr_t ra,
+                          void *pv, MemOp memop, Int128 val) {
+    __builtin_memcpy(pv, &val, 16);
+}
+
+#else
+
 /**
  * store_atom_16:
  * @p: host address
@@ -1142,3 +1168,5 @@ static void store_atom_16(CPUArchState *env, uintptr_t ra,
     }
     cpu_loop_exit_atomic(env_cpu(env), ra);
 }
+
+#endif
