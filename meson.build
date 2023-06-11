@@ -3778,7 +3778,7 @@ foreach target : target_dirs
                  name_suffix: 'fa')
 
   fpu_soft = fpu_soft_ss.apply(config_target, strict: false)
-  libfpu_soft = static_library('fpu_soft',
+  libfpu_soft = static_library('fpu_soft-' + target,
                  sources: fpu_soft.sources(),
                  dependencies: fpu_soft.dependencies(),
                  include_directories: target_inc,

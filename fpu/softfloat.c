@@ -97,7 +97,8 @@ this code that are retained.
 *----------------------------------------------------------------------------*/
 #include "fpu/softfloat-macros.h"
 
-#ifdef CONFIG_JOVE_HELPERS
+#ifdef CONFIG_JOVE
+
 static float jv_soft_fmaf(float x, float y, float z) { return (x * y) + z; }
 static double jv_soft_fma(double x, double y, double z) { return (x * y) + z; }
 static double jv_sqrt(double x) { __builtin_trap(); __builtin_unreachable(); }
@@ -120,6 +121,7 @@ g_assertion_message_expr(const char *domain, const char *file, int line,
   __builtin_trap();
   __builtin_unreachable();
 }
+
 #else
 
 static double jv_sqrt(double x) { return sqrt(x); }
