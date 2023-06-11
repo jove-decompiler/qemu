@@ -1331,6 +1331,9 @@ uint64_t cpu_ldq_code_mmu(CPUArchState *env, abi_ptr addr,
 static void *atomic_mmu_lookup(CPUArchState *env, target_ulong addr,
                                MemOpIdx oi, int size, uintptr_t retaddr)
 {
+#ifdef CONFIG_JOVE_HELPERS
+    void *ret;
+#else
     MemOp mop = get_memop(oi);
     int a_bits = get_alignment_bits(mop);
     void *ret;
@@ -1344,6 +1347,7 @@ static void *atomic_mmu_lookup(CPUArchState *env, target_ulong addr,
     if (unlikely(addr & (size - 1))) {
         cpu_loop_exit_atomic(env_cpu(env), retaddr);
     }
+#endif
 
     ret = g2h(env_cpu(env), addr);
     set_helper_retaddr(retaddr);
