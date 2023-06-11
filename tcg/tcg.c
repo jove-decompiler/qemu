@@ -2772,6 +2772,10 @@ void jv_tcg_func_start(TCGContext *s) {
   tcg_func_start(s);
 }
 
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
 __attribute__((visibility("hidden"))) void jv_EXTRACT_ME(TCGContext *s, TCGOp *op, TCGArg a);
 void jv_EXTRACT_ME(TCGContext *s, TCGOp *op, TCGArg a) {
   //
