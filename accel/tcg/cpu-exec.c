@@ -393,6 +393,15 @@ static inline bool check_for_breakpoints(CPUState *cpu, target_ulong pc,
         check_for_breakpoints_slow(cpu, pc, cflags);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
+{
+    return NULL;
+}
+
+#else
+
 /**
  * helper_lookup_tb_ptr: quick check for next tb
  * @env: current cpu state
@@ -426,6 +435,8 @@ const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
 
     return tb->tc.ptr;
 }
+
+#endif
 
 /* Execute a TB, and fix up the CPU state afterwards if necessary */
 /*
