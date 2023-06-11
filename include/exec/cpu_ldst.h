@@ -85,11 +85,32 @@ static inline abi_ptr cpu_untagged_addr(CPUState *cs, abi_ptr x)
 }
 #endif
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static inline void *g2h_untagged(abi_ptr x)
+{
+    return (void *)((uintptr_t)(x));
+}
+
+#else
+
+#ifdef CONFIG_JOVE
+void *_jv_g2h(uint64_t Addr);
+#endif
+
 /* All direct uses of g2h and h2g need to go away for usermode softmmu.  */
 static inline void *g2h_untagged(abi_ptr x)
 {
+#ifdef CONFIG_JOVE
+    void *y = _jv_g2h(x);
+    if (y)
+      return y;
+#endif
+
     return (void *)((uintptr_t)(x) + guest_base);
 }
+
+#endif
 
 static inline void *g2h(CPUState *cs, abi_ptr x)
 {
@@ -106,6 +127,19 @@ static inline bool guest_range_valid_untagged(abi_ulong start, abi_ulong len)
     return len - 1 <= GUEST_ADDR_MAX && start <= GUEST_ADDR_MAX - len + 1;
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+#define h2g_valid(x) 1
+
+#define h2g_nocheck(x) ({ \
+    uintptr_t __ret = (uintptr_t)(x); \
+    (abi_ptr)__ret; \
+})
+
+#define h2g(x) ({ h2g_nocheck(x); })
+
+#else
+
 #define h2g_valid(x) \
     (HOST_LONG_BITS <= TARGET_VIRT_ADDR_SPACE_BITS || \
      (uintptr_t)(x) - guest_base <= GUEST_ADDR_MAX)
@@ -120,6 +154,9 @@ static inline bool guest_range_valid_untagged(abi_ulong start, abi_ulong len)
     assert(h2g_valid(x)); \
     h2g_nocheck(x); \
 })
+
+#endif
+
 #else
 typedef target_ulong abi_ptr;
 #define TARGET_ABI_FMT_ptr TARGET_FMT_lx
@@ -304,6 +341,13 @@ Int128 cpu_atomic_cmpxchgo_be_mmu(CPUArchState *env, target_ulong addr,
 
 extern __thread uintptr_t helper_retaddr;
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static inline void set_helper_retaddr(uintptr_t ra) {}
+static inline void clear_helper_retaddr(void) {}
+
+#else
+
 static inline void set_helper_retaddr(uintptr_t ra)
 {
     helper_retaddr = ra;
@@ -323,6 +367,8 @@ static inline void clear_helper_retaddr(void)
     signal_barrier();
     helper_retaddr = 0;
 }
+
+#endif
 
 #else
 

@@ -52,10 +52,33 @@ bool cpu_unwind_state_data(CPUState *cpu, uintptr_t host_pc, uint64_t *data);
  */
 bool cpu_restore_state(CPUState *cpu, uintptr_t host_pc);
 
+#ifdef CONFIG_JOVE_HELPERS
+
+G_NORETURN static inline void cpu_loop_exit_noexc(CPUState *cpu) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+G_NORETURN static inline void cpu_loop_exit(CPUState *cpu) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+G_NORETURN static inline void cpu_loop_exit_restore(CPUState *cpu, uintptr_t pc) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+G_NORETURN static inline void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+
+#else
+
 G_NORETURN void cpu_loop_exit_noexc(CPUState *cpu);
 G_NORETURN void cpu_loop_exit(CPUState *cpu);
 G_NORETURN void cpu_loop_exit_restore(CPUState *cpu, uintptr_t pc);
 G_NORETURN void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc);
+
+#endif
 
 /**
  * cpu_loop_exit_requested:
@@ -537,8 +560,12 @@ void tb_set_jmp_target(TranslationBlock *tb, int n, uintptr_t addr);
 
 /* GETPC is the true target of the return instruction that we'll execute.  */
 #if defined(CONFIG_TCG_INTERPRETER)
+#ifdef CONFIG_JOVE_HELPERS
+# define GETPC() 0
+#else
 extern __thread uintptr_t tci_tb_ptr;
 # define GETPC() tci_tb_ptr
+#endif
 #else
 # define GETPC() \
     ((uintptr_t)__builtin_extract_return_addr(__builtin_return_address(0)))

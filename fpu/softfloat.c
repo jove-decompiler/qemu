@@ -84,6 +84,7 @@ this code that are retained.
  */
 #include "qemu/osdep.h"
 #include <math.h>
+
 #include "qemu/bitops.h"
 #include "fpu/softfloat.h"
 
@@ -95,6 +96,36 @@ this code that are retained.
 | desired.)
 *----------------------------------------------------------------------------*/
 #include "fpu/softfloat-macros.h"
+
+#ifdef CONFIG_JOVE_HELPERS
+static float jv_soft_fmaf(float x, float y, float z) { return (x * y) + z; }
+static double jv_soft_fma(double x, double y, double z) { return (x * y) + z; }
+static double jv_sqrt(double x) { __builtin_trap(); __builtin_unreachable(); }
+static float jv_sqrtf(float x) { __builtin_trap(); __builtin_unreachable(); }
+static void jv_abort(void)  { __builtin_trap(); __builtin_unreachable(); }
+#define fmaf jv_soft_fmaf
+#define fma jv_soft_fma
+#define abort jv_abort
+
+__attribute__((__nothrow__)) __attribute__((__noreturn__)) void
+__assert_fail(const char *__assertion, const char *__file, unsigned int __line,
+              const char *__function) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+
+__attribute__((__noreturn__)) void
+g_assertion_message_expr(const char *domain, const char *file, int line,
+                         const char *func, const char *expr) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+#else
+
+static double jv_sqrt(double x) { return sqrt(x); }
+static float jv_sqrtf(float x) { return sqrtf(x); }
+
+#endif
 
 /*
  * Hardfloat
@@ -4539,7 +4570,7 @@ float32 QEMU_FLATTEN float32_sqrt(float32 xa, float_status *s)
                         float32_is_neg(ua.s))) {
         goto soft;
     }
-    ur.h = sqrtf(ua.h);
+    ur.h = jv_sqrtf(ua.h);
     return ur.s;
 
  soft:
@@ -4566,7 +4597,7 @@ float64 QEMU_FLATTEN float64_sqrt(float64 xa, float_status *s)
                         float64_is_neg(ua.s))) {
         goto soft;
     }
-    ur.h = sqrt(ua.h);
+    ur.h = jv_sqrt(ua.h);
     return ur.s;
 
  soft:

@@ -2423,7 +2423,8 @@ static inline TCGReg tcg_regset_first(TCGRegSet d)
 #define ne_fprintf(...) \
     ({ int ret_ = fprintf(__VA_ARGS__); ret_ >= 0 ? ret_ : 0; })
 
-static void tcg_dump_ops(TCGContext *s, FILE *f, bool have_prefs)
+void tcg_dump_ops(TCGContext *s, FILE *f, bool have_prefs);
+void tcg_dump_ops(TCGContext *s, FILE *f, bool have_prefs)
 {
     char buf[128];
     TCGOp *op;
@@ -2736,6 +2737,123 @@ static void tcg_dump_ops(TCGContext *s, FILE *f, bool have_prefs)
         putc('\n', f);
     }
 }
+
+#ifdef CONFIG_JOVE
+
+#include "jove.h"
+
+TCGContext *jv_get_tcg_context(void) {
+  return tcg_ctx;
+}
+
+int jv_tcgopc_nb_cargs_in_def(TCGOpcode opc) { return tcg_op_defs[opc].nb_cargs; }
+int jv_tcgopc_nb_iargs_in_def(TCGOpcode opc) { return tcg_op_defs[opc].nb_iargs; }
+int jv_tcgopc_nb_oargs_in_def(TCGOpcode opc) { return tcg_op_defs[opc].nb_oargs; }
+const char *jv_tcgopc_name_in_def(TCGOpcode opc) {
+  return tcg_op_defs[opc].name;
+}
+
+const char *jv_tcg_find_helper(TCGOp *op) {
+  assert(op->opc == INDEX_op_call);
+
+  const TCGHelperInfo *info = tcg_call_info(op);
+  return info->name;
+}
+
+const char *jv_tcg_get_arg_str(char *buf, int buf_size, TCGArg arg) {
+  return tcg_get_arg_str(tcg_ctx, buf, buf_size, arg);
+}
+
+const char *jv_get_global_name(int idx) {
+  return tcg_ctx->temps[idx].name;
+}
+
+void jv_tcg_func_start(TCGContext *s) {
+  tcg_func_start(s);
+}
+
+__attribute__((visibility("hidden"))) void jv_EXTRACT_ME(TCGContext *s, TCGOp *op, TCGArg a);
+void jv_EXTRACT_ME(TCGContext *s, TCGOp *op, TCGArg a) {
+  //
+  // TCGOp
+  //
+  op->args[0] = a;
+
+  //
+  // QTAILQ_FOREACH
+  //
+  QTAILQ_FOREACH(op, &s->ops, link) {
+    if (op->opc == INDEX_op_insn_start) {}
+
+    //
+    // arg_temp
+    //
+    TCGTemp *ts = arg_temp(op->args[0]);
+    (void)ts;
+
+    //
+    // temp_arg
+    //
+    a = temp_arg(ts);
+
+    //
+    // temp_idx
+    //
+    int idx = temp_idx(ts);
+    (void)idx;
+
+
+    int nb_oargs = TCGOP_CALLO(op);
+    int nb_iargs = TCGOP_CALLI(op);
+
+    (void)nb_oargs;
+    (void)nb_iargs;
+
+    TCGLabel *lbl = arg_label(op->args[0]);
+    (void)lbl;
+
+    MemOpIdx oi = op->args[2];
+    MemOp mop = get_memop(oi);
+
+    switch (mop & MO_SSIZE) {
+    case MO_UB:
+        break;
+    case MO_SB:
+        break;
+    case MO_UW:
+        break;
+    case MO_SW:
+        break;
+    case MO_UL:
+        break;
+    case MO_SL:
+        break;
+    case MO_UQ:
+        break;
+    default:
+        break;
+    }
+    (void)mop;
+
+    if (TCG_TARGET_REG_BITS == 64) {}
+
+    if (op->args[0] == TCG_COND_NE)
+      ;
+
+#if 0
+    op->args[0] = TARGET_LONG_BITS == 32 ? TCG_TYPE_I32 : TCG_TYPE_I64;
+    op->args[0] = TARGET_INSN_START_WORDS;
+#endif
+
+#ifdef TCG_GUEST_DEFAULT_MO
+    op->args[0] = TCG_GUEST_DEFAULT_MO;
+#else
+    tcg_ctx->guest_mo = TCG_MO_ALL;
+#endif
+  }
+}
+
+#endif
 
 /* we give more priority to constraints with less registers */
 static int get_constraint_priority(const TCGOpDef *def, int k)

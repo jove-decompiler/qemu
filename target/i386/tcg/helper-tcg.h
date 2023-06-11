@@ -58,6 +58,34 @@ static inline target_long lshift(target_long x, int n)
 void tcg_x86_init(void);
 
 /* excp_helper.c */
+#ifdef CONFIG_JOVE_HELPERS
+inline G_NORETURN void raise_exception(CPUX86State *env, int exception_index) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+inline G_NORETURN void raise_exception_ra(CPUX86State *env, int exception_index,
+                                          uintptr_t retaddr) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+inline G_NORETURN void raise_exception_err(CPUX86State *env, int exception_index,
+                                           int error_code) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+inline G_NORETURN void raise_exception_err_ra(CPUX86State *env,
+                                              int exception_index,
+                                              int error_code,
+                                              uintptr_t retaddr) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+inline G_NORETURN void raise_interrupt(CPUX86State *nenv, int intno, int is_int,
+                                       int error_code, int next_eip_addend) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+#else
 G_NORETURN void raise_exception(CPUX86State *env, int exception_index);
 G_NORETURN void raise_exception_ra(CPUX86State *env, int exception_index,
                                    uintptr_t retaddr);
@@ -67,9 +95,11 @@ G_NORETURN void raise_exception_err_ra(CPUX86State *env, int exception_index,
                                        int error_code, uintptr_t retaddr);
 G_NORETURN void raise_interrupt(CPUX86State *nenv, int intno, int is_int,
                                 int error_code, int next_eip_addend);
+#endif
 G_NORETURN void handle_unaligned_access(CPUX86State *env, vaddr vaddr,
                                         MMUAccessType access_type,
                                         uintptr_t retaddr);
+
 #ifdef CONFIG_USER_ONLY
 void x86_cpu_record_sigsegv(CPUState *cs, vaddr addr,
                             MMUAccessType access_type,

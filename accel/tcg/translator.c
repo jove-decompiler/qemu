@@ -16,6 +16,10 @@
 #include "exec/plugin-gen.h"
 #include "tcg/tcg-op-common.h"
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
 static void gen_io_start(void)
 {
     tcg_gen_st_i32(tcg_constant_i32(1), cpu_env,
@@ -49,12 +53,22 @@ bool translator_io_start(DisasContextBase *db)
 
 static TCGOp *gen_tb_start(uint32_t cflags)
 {
+#ifdef CONFIG_JOVE
+    TCGv_i32 count = 0;
+#else
     TCGv_i32 count = tcg_temp_new_i32();
+#endif
     TCGOp *icount_start_insn = NULL;
 
+#ifdef CONFIG_JOVE
+    (void)count;
+    assert(!(!!(cflags & CF_USE_ICOUNT)));
+    assert(!!(cflags & CF_NOIRQ));
+#else
     tcg_gen_ld_i32(count, cpu_env,
                    offsetof(ArchCPU, neg.icount_decr.u32) -
                    offsetof(ArchCPU, env));
+#endif
 
     if (cflags & CF_USE_ICOUNT) {
         /*
@@ -170,13 +184,19 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             plugin_gen_insn_start(cpu, db);
         }
 
+#ifdef CONFIG_JOVE
+        jv_term_addr_is(db->pc_next);
+#endif
+
         /* Disassemble one instruction.  The translate_insn hook should
            update db->pc_next and db->is_jmp to indicate what should be
            done next -- either exiting this loop or locate the start of
            the next instruction.  */
         if (db->num_insns == db->max_insns && (cflags & CF_LAST_IO)) {
             /* Accept I/O on the last instruction.  */
+#ifndef CONFIG_JOVE
             gen_io_start();
+#endif
             ops->translate_insn(db, cpu);
         } else {
             /* we should only see CF_MEMI_ONLY for io_recompile */
@@ -199,6 +219,10 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
 
         /* Stop translation if translate_insn so indicated.  */
         if (db->is_jmp != DISAS_NEXT) {
+#ifdef CONFIG_JOVE
+            if (jv_is_term_unknown())
+              jv_term_is_none(db->pc_next);
+#endif
             break;
         }
 
@@ -206,8 +230,25 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
            or we have executed all of the allowed instructions.  */
         if (tcg_op_buf_full() || db->num_insns >= db->max_insns) {
             db->is_jmp = DISAS_TOO_MANY;
+
+#ifdef CONFIG_JOVE
+            if (jv_is_term_unknown())
+              jv_term_is_none(db->pc_next);
+#endif
             break;
         }
+
+#ifdef CONFIG_JOVE
+        if (jv_get_end_pc()) {
+            if (db->pc_next >= jv_get_end_pc()) {
+                db->is_jmp = DISAS_TOO_MANY;
+
+                jv_term_is_none(db->pc_next);
+                jv_term_addr_is(0); /* XXX */
+                break;
+            }
+        }
+#endif
     }
 
     /* Emit code to exit the TB, as indicated by db->is_jmp.  */
@@ -237,6 +278,9 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
 static void *translator_access(CPUArchState *env, DisasContextBase *db,
                                target_ulong pc, size_t len)
 {
+#ifdef CONFIG_JOVE
+    return NULL;
+#else
     void *host;
     target_ulong base, end;
     TranslationBlock *tb;
@@ -283,6 +327,7 @@ static void *translator_access(CPUArchState *env, DisasContextBase *db,
 
     tcg_debug_assert(pc >= base);
     return host + (pc - base);
+#endif
 }
 
 static void plugin_insn_append(abi_ptr pc, const void *from, size_t size)

@@ -1,0 +1,46 @@
+#pragma once
+
+#define JV_FUNC_ATTR __attribute__((visibility("hidden")))
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define JOVE_PCREL_MAGIC 0xb7432f22
+
+JV_FUNC_ATTR int jv_init_libqemu(const char *);
+
+JV_FUNC_ATTR TCGContext *jv_get_tcg_context(void);
+
+JV_FUNC_ATTR int jv_tcgopc_nb_iargs_in_def(TCGOpcode);
+JV_FUNC_ATTR int jv_tcgopc_nb_oargs_in_def(TCGOpcode);
+JV_FUNC_ATTR int jv_tcgopc_nb_cargs_in_def(TCGOpcode);
+JV_FUNC_ATTR const char *jv_tcgopc_name_in_def(TCGOpcode);
+
+JV_FUNC_ATTR const char *jv_tcg_find_helper(TCGOp *);
+
+JV_FUNC_ATTR const char *jv_tcg_get_arg_str(char *buf, int buf_size, TCGArg);
+
+JV_FUNC_ATTR const char *jv_get_global_name(int);
+
+JV_FUNC_ATTR void jv_tcg_func_start(TCGContext *);
+
+JV_FUNC_ATTR int jv_hflags_of_cpu_env(CPUState *cpu);
+
+JV_FUNC_ATTR void jv_init_tcg_ctx(TCGContext *);
+
+JV_FUNC_ATTR void jv_term_is_cond_jump(uint64_t Target, uint64_t NextPC);
+JV_FUNC_ATTR void jv_term_is_uncond_jump(uint64_t Target);
+JV_FUNC_ATTR void jv_term_is_ind_call(uint64_t NextPC);
+JV_FUNC_ATTR void jv_term_is_ind_jump(void);
+JV_FUNC_ATTR void jv_term_is_return(void);
+JV_FUNC_ATTR void jv_term_is_call(uint64_t Target, uint64_t NextPC);
+JV_FUNC_ATTR void jv_term_is_none(uint64_t NextPC);
+JV_FUNC_ATTR void jv_term_is_unreachable(void);
+JV_FUNC_ATTR bool jv_is_term_unknown(void);
+JV_FUNC_ATTR uint64_t jv_get_end_pc(void);
+JV_FUNC_ATTR void jv_term_addr_is(uint64_t Addr);
+
+#ifdef __cplusplus
+}
+#endif

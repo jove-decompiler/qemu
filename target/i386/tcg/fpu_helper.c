@@ -2841,6 +2841,10 @@ void helper_fxrstor(CPUX86State *env, target_ulong ptr)
     do_fxrstor(env, ptr, GETPC());
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memset __builtin_memset
+#endif
+
 static void do_xrstor(CPUX86State *env, target_ulong ptr, uint64_t rfbm, uintptr_t ra)
 {
     uint64_t xstate_bv, xcomp_bv, reserve0;
