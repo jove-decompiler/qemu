@@ -19,6 +19,15 @@
 #endif
 #define HAVE_al8_fast      (ATOMIC_REG_SIZE >= 8)
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static int required_atomicity(CPUArchState *env, uintptr_t p, MemOp memop)
+{
+    return MO_8;
+}
+
+#else
+
 /**
  * required_atomicity:
  *
@@ -99,6 +108,8 @@ static int required_atomicity(CPUArchState *env, uintptr_t p, MemOp memop)
     return atmax;
 }
 
+#endif
+
 /**
  * load_atomic2:
  * @pv: host address
@@ -152,6 +163,7 @@ static uint64_t load_atomic8_or_exit(CPUArchState *env, uintptr_t ra, void *pv)
         return load_atomic8(pv);
     }
 
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef CONFIG_USER_ONLY
     /*
      * If the page is not writable, then assume the value is immutable
@@ -163,6 +175,7 @@ static uint64_t load_atomic8_or_exit(CPUArchState *env, uintptr_t ra, void *pv)
         uint64_t *p = __builtin_assume_aligned(pv, 8);
         return *p;
     }
+#endif
 #endif
 
     /* Ultimate fallback: re-execute in serial context. */
@@ -186,6 +199,7 @@ static Int128 load_atomic16_or_exit(CPUArchState *env, uintptr_t ra, void *pv)
         return atomic16_read_ro(p);
     }
 
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef CONFIG_USER_ONLY
     /*
      * We can only use cmpxchg to emulate a load if the page is writable.
@@ -197,6 +211,7 @@ static Int128 load_atomic16_or_exit(CPUArchState *env, uintptr_t ra, void *pv)
     if (!page_check_range(h2g(p), 16, PAGE_WRITE_ORG)) {
         return *p;
     }
+#endif
 #endif
 
     /*
@@ -383,6 +398,16 @@ static inline uint64_t load_atom_8_by_8_or_4(void *pv)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static uint16_t load_atom_2(CPUArchState *env, uintptr_t ra,
+                            void *pv, MemOp memop)
+{
+    return lduw_he_p(pv);
+}
+
+#else
+
 /**
  * load_atom_2:
  * @p: host address
@@ -421,6 +446,8 @@ static uint16_t load_atom_2(CPUArchState *env, uintptr_t ra,
         g_assert_not_reached();
     }
 }
+
+#endif
 
 /**
  * load_atom_4:
@@ -463,6 +490,16 @@ static uint32_t load_atom_4(CPUArchState *env, uintptr_t ra,
         g_assert_not_reached();
     }
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+
+static uint64_t load_atom_8(CPUArchState *env, uintptr_t ra,
+                            void *pv, MemOp memop)
+{
+    return ldq_he_p(pv);
+}
+
+#else
 
 /**
  * load_atom_8:
@@ -514,6 +551,8 @@ static uint64_t load_atom_8(CPUArchState *env, uintptr_t ra,
         g_assert_not_reached();
     }
 }
+
+#endif
 
 /**
  * load_atom_16:

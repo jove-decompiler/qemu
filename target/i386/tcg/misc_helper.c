@@ -47,6 +47,27 @@ void helper_into(CPUX86State *env, int next_eip_addend)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_cpuid(CPUX86State *env) {
+    uint32_t index = env->regs[R_EAX];
+    uint32_t count = env->regs[R_ECX];
+
+    uint32_t eax, ebx, ecx, edx;
+    asm volatile("cpuid"
+                 : "=a"(eax), "=b"(ebx),
+                   "=c"(ecx), "=d"(edx)
+                 : "0"(index), "c"(count)
+                 : "cc");
+
+    env->regs[R_EAX] = eax;
+    env->regs[R_EBX] = ebx;
+    env->regs[R_ECX] = ecx;
+    env->regs[R_EDX] = edx;
+}
+
+#else
+
 void helper_cpuid(CPUX86State *env)
 {
     uint32_t eax, ebx, ecx, edx;
@@ -60,6 +81,21 @@ void helper_cpuid(CPUX86State *env)
     env->regs[R_ECX] = ecx;
     env->regs[R_EDX] = edx;
 }
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_rdtsc(CPUX86State *env)
+{
+    uint32_t tickl, tickh;
+    asm volatile("rdtsc" : "=a"(tickl), "=d"(tickh));
+
+    env->regs[R_EAX] = tickl;
+    env->regs[R_EDX] = tickh;
+}
+
+#else
 
 void helper_rdtsc(CPUX86State *env)
 {
@@ -75,11 +111,45 @@ void helper_rdtsc(CPUX86State *env)
     env->regs[R_EDX] = (uint32_t)(val >> 32);
 }
 
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_rdtscp(CPUX86State *env)
+{
+    unsigned int tickl, tickh, aux;
+    asm volatile("rdtscp" : "=a"(tickl), "=d"(tickh), "=c"(aux));
+
+    env->regs[R_EAX] = tickl;
+    env->regs[R_EDX] = tickh;
+    env->regs[R_ECX] = aux;
+}
+
+#else
+
 void helper_rdtscp(CPUX86State *env)
 {
     helper_rdtsc(env);
     env->regs[R_ECX] = (uint32_t)(env->tsc_aux);
 }
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_rdpmc(CPUX86State *env)
+{
+    uint32_t counter = env->regs[R_ECX];
+
+    uint32_t lo, hi;
+
+    asm volatile("rdpmc" : "=a" (lo), "=d" (hi) : "c" (counter));
+
+    env->regs[R_EAX] = lo;
+    env->regs[R_EDX] = hi;
+}
+
+#else
 
 G_NORETURN void helper_rdpmc(CPUX86State *env)
 {
@@ -94,6 +164,8 @@ G_NORETURN void helper_rdpmc(CPUX86State *env)
     raise_exception_err(env, EXCP06_ILLOP, 0);
 }
 
+#endif
+
 G_NORETURN void do_pause(CPUX86State *env)
 {
     CPUState *cs = env_cpu(env);
@@ -103,6 +175,15 @@ G_NORETURN void do_pause(CPUX86State *env)
     cpu_loop_exit(cs);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_pause(CPUX86State *env, int next_eip_addend)
+{
+    asm volatile("pause");
+}
+
+#else
+
 G_NORETURN void helper_pause(CPUX86State *env, int next_eip_addend)
 {
     cpu_svm_check_intercept_param(env, SVM_EXIT_PAUSE, 0, GETPC());
@@ -110,6 +191,8 @@ G_NORETURN void helper_pause(CPUX86State *env, int next_eip_addend)
 
     do_pause(env);
 }
+
+#endif
 
 uint64_t helper_rdpkru(CPUX86State *env, uint32_t ecx)
 {

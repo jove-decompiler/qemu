@@ -60,6 +60,10 @@
 #include "semihosting/semihost.h"
 #endif
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
 #ifndef AT_FLAGS_PRESERVE_ARGV0
 #define AT_FLAGS_PRESERVE_ARGV0_BIT 0
 #define AT_FLAGS_PRESERVE_ARGV0 (1 << AT_FLAGS_PRESERVE_ARGV0_BIT)
@@ -667,8 +671,18 @@ static int parse_args(int argc, char **argv)
     return optind;
 }
 
+#ifdef CONFIG_JOVE
+CPUState *jv_cpu;
+
+int jv_init_libqemu(const char *_binpath)
+#else
 int main(int argc, char **argv, char **envp)
+#endif
 {
+#ifdef CONFIG_JOVE
+    int argc = 2;
+    char *argv[] = {(char *)"", (char *)_binpath, NULL};
+#endif
     struct target_pt_regs regs1, *regs = &regs1;
     struct image_info info1, *info = &info1;
     struct linux_binprm bprm;
@@ -962,7 +976,11 @@ int main(int argc, char **argv, char **envp)
     qemu_semihosting_guestfd_init();
 #endif
 
+#ifdef CONFIG_JOVE
+    jv_cpu = cpu;
+#else
     cpu_loop(env);
+#endif
     /* never exits */
     return 0;
 }

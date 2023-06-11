@@ -34,6 +34,8 @@ meson_options_help() {
   printf "%s\n" '  --enable-fuzzing         build fuzzing targets'
   printf "%s\n" '  --enable-gcov            Enable coverage tracking.'
   printf "%s\n" '  --enable-gprof           QEMU profiling with gprof'
+  printf "%s\n" '  --enable-jove            build for jove'
+  printf "%s\n" '  --enable-jove-helpers    build for jove (helpers)'
   printf "%s\n" '  --enable-lto             Use link time optimization'
   printf "%s\n" '  --enable-malloc=CHOICE   choose memory allocator to use [system] (choices:'
   printf "%s\n" '                           jemalloc/system/tcmalloc)'
@@ -328,6 +330,10 @@ _meson_option_parse() {
     --interp-prefix=*) quote_sh "-Dinterp_prefix=$2" ;;
     --enable-jack) printf "%s" -Djack=enabled ;;
     --disable-jack) printf "%s" -Djack=disabled ;;
+    --enable-jove) printf "%s" -Djove=true ;;
+    --disable-jove) printf "%s" -Djove=false ;;
+    --enable-jove-helpers) printf "%s" -Djove_helpers=true ;;
+    --disable-jove-helpers) printf "%s" -Djove_helpers=false ;;
     --enable-keyring) printf "%s" -Dkeyring=enabled ;;
     --disable-keyring) printf "%s" -Dkeyring=disabled ;;
     --enable-kvm) printf "%s" -Dkvm=enabled ;;

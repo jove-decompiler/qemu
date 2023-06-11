@@ -24,7 +24,11 @@
 #include "qemu/plugin.h"
 #include "internal.h"
 
+#ifndef CONFIG_JOVE_HELPERS
 bool tcg_allowed;
+#endif
+
+#ifndef CONFIG_JOVE_HELPERS
 
 /* exit the current TB, but without causing any exception to be raised */
 void cpu_loop_exit_noexc(CPUState *cpu)
@@ -32,6 +36,8 @@ void cpu_loop_exit_noexc(CPUState *cpu)
     cpu->exception_index = -1;
     cpu_loop_exit(cpu);
 }
+
+#endif
 
 #if defined(CONFIG_SOFTMMU)
 void cpu_reloading_memory_map(void)
@@ -63,6 +69,8 @@ void cpu_reloading_memory_map(void)
 }
 #endif
 
+#ifndef CONFIG_JOVE_HELPERS
+
 void cpu_loop_exit(CPUState *cpu)
 {
     /* Undo the setting in cpu_tb_exec.  */
@@ -87,3 +95,5 @@ void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc)
     cpu->exception_index = EXCP_ATOMIC;
     cpu_loop_exit_restore(cpu, pc);
 }
+
+#endif

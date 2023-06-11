@@ -892,6 +892,9 @@ void page_reset_target_data(target_ulong start, target_ulong last) { }
 static void *cpu_mmu_lookup(CPUArchState *env, abi_ptr addr,
                             MemOp mop, uintptr_t ra, MMUAccessType type)
 {
+#ifdef CONFIG_JOVE_HELPERS
+    void *ret;
+#else
     int a_bits = get_alignment_bits(mop);
     void *ret;
 
@@ -899,6 +902,7 @@ static void *cpu_mmu_lookup(CPUArchState *env, abi_ptr addr,
     if (unlikely(addr & ((1 << a_bits) - 1))) {
         cpu_loop_exit_sigbus(env_cpu(env), addr, type, ra);
     }
+#endif
 
     ret = g2h(env_cpu(env), addr);
     set_helper_retaddr(ra);

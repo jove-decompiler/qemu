@@ -50,6 +50,8 @@ qemu_desktopdir = get_option('datadir') / 'applications'
 qemu_icondir = get_option('datadir') / 'icons'
 
 config_host_data = configuration_data()
+config_host_data.set('CONFIG_JOVE', get_option('jove'))
+config_host_data.set('CONFIG_JOVE_HELPERS', get_option('jove_helpers'))
 genh = []
 qapi_trace_events = []
 
@@ -3175,6 +3177,7 @@ stub_ss = ss.source_set()
 trace_ss = ss.source_set()
 user_ss = ss.source_set()
 util_ss = ss.source_set()
+fpu_soft_ss = ss.source_set()
 
 # accel modules
 qtest_module_ss = ss.source_set()
@@ -3773,6 +3776,15 @@ foreach target : target_dirs
                  c_args: c_args,
                  build_by_default: false,
                  name_suffix: 'fa')
+
+  fpu_soft = fpu_soft_ss.apply(config_target, strict: false)
+  libfpu_soft = static_library('fpu_soft',
+                 sources: fpu_soft.sources(),
+                 dependencies: fpu_soft.dependencies(),
+                 include_directories: target_inc,
+                 c_args: c_args,
+                 build_by_default: true,
+                 name_suffix: 'a')
 
   if target.endswith('-softmmu')
     execs = [{

@@ -36,6 +36,8 @@ G_NORETURN void helper_raise_exception(CPUX86State *env, int exception_index)
     raise_exception(env, exception_index);
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 /*
  * Check nested exceptions and change to double or triple fault if
  * needed. It should only be called, if this is not an interrupt.
@@ -140,6 +142,7 @@ G_NORETURN void raise_exception_ra(CPUX86State *env, int exception_index,
 {
     raise_interrupt2(env, exception_index, 0, 0, 0, retaddr);
 }
+#endif
 
 G_NORETURN void handle_unaligned_access(CPUX86State *env, vaddr vaddr,
                                         MMUAccessType access_type,

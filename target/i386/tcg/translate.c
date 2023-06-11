@@ -38,6 +38,9 @@
 #include "exec/helper-info.c.inc"
 #undef  HELPER_H
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
 
 #define PREFIX_REPZ   0x01
 #define PREFIX_REPNZ  0x02
@@ -1348,6 +1351,10 @@ static void gen_repz(DisasContext *s, MemOp ot,
         gen_op_jz_ecx(s, l2);
     }
     gen_jmp_rel_csize(s, -cur_insn_len(s), 0);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_cond_jump((s->pc -cur_insn_len(s)) - s->cs_base, s->pc - s->cs_base);
+#endif
 }
 
 #define GEN_REPZ(op) \
@@ -1451,6 +1458,10 @@ static void gen_exception(DisasContext *s, int trapno)
 static void gen_illegal_opcode(DisasContext *s)
 {
     gen_exception(s, EXCP06_ILLOP);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_unreachable();
+#endif
 }
 
 /* Generate #GP for the current instruction. */
@@ -2214,6 +2225,10 @@ static AddressParts gen_lea_modrm_0(CPUX86State *env, DisasContext *s,
                 if (CODE64(s) && !havesib) {
                     base = -2;
                     disp += s->pc + s->rip_offset;
+
+#ifdef CONFIG_JOVE
+                    tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
                 }
             }
             break;
@@ -2560,6 +2575,10 @@ static inline void gen_stack_update(DisasContext *s, int addend)
     gen_op_add_reg_im(s, mo_stacksize(s), R_ESP, addend);
 }
 
+#ifdef CONFIG_JOVE
+bool gen_push_v_PCRel = false;
+#endif
+
 /* Generate a push. It depends on ss32, addseg and dflag.  */
 static void gen_push_v(DisasContext *s, TCGv val)
 {
@@ -2577,6 +2596,13 @@ static void gen_push_v(DisasContext *s, TCGv val)
         }
         gen_lea_v_seg(s, a_ot, s->A0, R_SS, -1);
     }
+
+#ifdef CONFIG_JOVE
+    if (gen_push_v_PCRel) {
+        tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+        gen_push_v_PCRel = false;
+    }
+#endif
 
     gen_op_st_v(s, d_ot, val, s->A0);
     gen_op_mov_reg_v(s, a_ot, R_ESP, new_esp);
@@ -3123,6 +3149,21 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         g_assert_not_reached();
     }
 
+#ifdef CONFIG_JOVE
+    {
+      //
+      // (jove) hack for XOP instructions
+      //
+      uint32_t l = cpu_ldl_code(env, s->pc);
+      //const void *code = g2h(s->pc, env);
+
+      if (l == 0xc278e88f) {
+        s->pc += 6;
+        goto illegal_op;
+      }
+    }
+#endif
+
     prefixes = 0;
 
  next_byte:
@@ -3621,10 +3662,17 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             if (dflag == MO_16) {
                 tcg_gen_ext16u_tl(s->T0, s->T0);
             }
+#ifdef CONFIG_JOVE
+            gen_push_v_PCRel = true;
+#endif
             gen_push_v(s, eip_next_tl(s));
             gen_op_jmp_v(s, s->T0);
             gen_bnd_jmp(s);
             s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_ind_call(s->pc - s->cs_base);
+#endif
             break;
         case 3: /* lcall Ev */
             if (mod == 3) {
@@ -3647,6 +3695,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
                                       eip_next_i32(s));
             }
             s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_ind_call(s->pc - s->cs_base);
+#endif
             break;
         case 4: /* jmp Ev */
             if (dflag == MO_16) {
@@ -3655,6 +3707,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             gen_op_jmp_v(s, s->T0);
             gen_bnd_jmp(s);
             s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_ind_jump();
+#endif
             break;
         case 5: /* ljmp Ev */
             if (mod == 3) {
@@ -3673,6 +3729,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
                 gen_op_jmp_v(s, s->T1);
             }
             s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_ind_jump();
+#endif
             break;
         case 6: /* push Ev */
             gen_push_v(s, s->T0);
@@ -5060,6 +5120,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         gen_op_jmp_v(s, s->T0);
         gen_bnd_jmp(s);
         s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+        jv_term_is_return();
+#endif
         break;
     case 0xc3: /* ret */
         ot = gen_pop_T0(s);
@@ -5068,6 +5132,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         gen_op_jmp_v(s, s->T0);
         gen_bnd_jmp(s);
         s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+        jv_term_is_return();
+#endif
         break;
     case 0xca: /* lret im */
         val = x86_ldsw_code(env, s);
@@ -5092,6 +5160,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             gen_stack_update(s, val + (2 << dflag));
         }
         s->base.is_jmp = DISAS_EOB_ONLY;
+
+#ifdef CONFIG_JOVE
+        jv_term_is_return();
+#endif
         break;
     case 0xcb: /* lret */
         val = 0;
@@ -5110,15 +5182,26 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         }
         set_cc_op(s, CC_OP_EFLAGS);
         s->base.is_jmp = DISAS_EOB_ONLY;
+
+#ifdef CONFIG_JOVE
+        jv_term_is_return();
+#endif
         break;
     case 0xe8: /* call im */
         {
             int diff = (dflag != MO_16
                         ? (int32_t)insn_get(env, s, MO_32)
                         : (int16_t)insn_get(env, s, MO_16));
+#ifdef CONFIG_JOVE
+            gen_push_v_PCRel = true;
+#endif
             gen_push_v(s, eip_next_tl(s));
             gen_bnd_jmp(s);
             gen_jmp_rel(s, dflag, diff, 0);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_call((s->pc + diff) - s->cs_base, s->pc - s->cs_base);
+#endif
         }
         break;
     case 0x9a: /* lcall im */
@@ -5142,6 +5225,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
                         : (int16_t)insn_get(env, s, MO_16));
             gen_bnd_jmp(s);
             gen_jmp_rel(s, dflag, diff, 0);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_uncond_jump((s->pc + diff) - s->cs_base);
+#endif
         }
         break;
     case 0xea: /* ljmp im */
@@ -5162,6 +5249,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         {
             int diff = (int8_t)insn_get(env, s, MO_8);
             gen_jmp_rel(s, dflag, diff, 0);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_uncond_jump((s->pc + diff) - s->cs_base);
+#endif
         }
         break;
     case 0x70 ... 0x7f: /* jcc Jb */
@@ -5169,6 +5260,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             int diff = (int8_t)insn_get(env, s, MO_8);
             gen_bnd_jmp(s);
             gen_jcc(s, b, diff);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_cond_jump((s->pc + diff) - s->cs_base, s->pc - s->cs_base);
+#endif
         }
         break;
     case 0x180 ... 0x18f: /* jcc Jv */
@@ -5178,6 +5273,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
                         : (int16_t)insn_get(env, s, MO_16));
             gen_bnd_jmp(s);
             gen_jcc(s, b, diff);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_cond_jump((s->pc + diff) - s->cs_base, s->pc - s->cs_base);
+#endif
         }
         break;
 
@@ -5226,6 +5325,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             set_cc_op(s, CC_OP_EFLAGS);
             /* abort translation because TF/AC flag may change */
             s->base.is_jmp = DISAS_EOB_NEXT;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_none(s->pc - s->cs_base);
+#endif
         }
         break;
     case 0x9e: /* sahf */
@@ -5519,6 +5622,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             gen_update_eip_cur(s);
             gen_helper_pause(cpu_env, cur_insn_len_i32(s));
             s->base.is_jmp = DISAS_NORETURN;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_none(s->pc - s->cs_base);
+#endif
         }
         break;
     case 0x9b: /* fwait */
@@ -5531,12 +5638,20 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         break;
     case 0xcc: /* int3 */
         gen_interrupt(s, EXCP03_INT3);
+
+#ifdef CONFIG_JOVE
+        jv_term_is_none(s->pc - s->cs_base);
+#endif
         break;
     case 0xcd: /* int N */
         val = x86_ldub_code(env, s);
         if (check_vm86_iopl(s)) {
             gen_interrupt(s, val);
         }
+
+#ifdef CONFIG_JOVE
+        jv_term_is_none(s->pc - s->cs_base);
+#endif
         break;
     case 0xce: /* into */
         if (CODE64(s))
@@ -5633,6 +5748,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
 
             gen_set_label(l1);
             gen_jmp_rel(s, dflag, diff, 0);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_cond_jump((s->pc + diff) - s->cs_base, s->pc - s->cs_base);
+#endif
         }
         break;
     case 0x130: /* wrmsr */
@@ -5692,6 +5811,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
            after the syscall insn completes. This allows #DB to not be
            generated after one has entered CPL0 if TF is set in FMASK.  */
         gen_eob_worker(s, false, true);
+
+#ifdef CONFIG_JOVE
+        jv_term_is_none(s->pc - s->cs_base);
+#endif
         break;
     case 0x107: /* sysret */
         if (!PE(s)) {
@@ -5722,6 +5845,10 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
             gen_helper_hlt(cpu_env, cur_insn_len_i32(s));
             s->base.is_jmp = DISAS_NORETURN;
         }
+
+#ifdef CONFIG_JOVE
+        jv_term_is_unreachable();
+#endif
         break;
     case 0x100:
         modrm = x86_ldub_code(env, s);
@@ -6790,6 +6917,14 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
     gen_unknown_opcode(env, s);
     return true;
 }
+
+#ifdef CONFIG_JOVE
+
+int jv_hflags_of_cpu_env(CPUState *cpu) {
+  return cpu->env_ptr->hflags;
+}
+
+#endif
 
 void tcg_x86_init(void)
 {

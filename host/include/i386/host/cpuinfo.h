@@ -27,8 +27,16 @@
 #define CPUINFO_ATOMIC_VMOVDQA  (1u << 16)
 #define CPUINFO_ATOMIC_VMOVDQU  (1u << 17)
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static unsigned cpuinfo = 0;
+
+#else
+
 /* Initialized with a constructor. */
 extern unsigned cpuinfo;
+
+#endif
 
 /*
  * We cannot rely on constructor ordering, so other constructors must
