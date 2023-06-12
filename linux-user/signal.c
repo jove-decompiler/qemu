@@ -606,8 +606,10 @@ void signal_init(void)
            SIGSEGV and SIGBUS, to detect exceptions.  We can not just
            trap all signals because it affects syscall interrupt
            behavior.  But do trap all default-fatal signals.  */
+#ifndef CONFIG_JOVE
         if (fatal_signal (i))
             sigaction(host_sig, &act, NULL);
+#endif
     }
 }
 
