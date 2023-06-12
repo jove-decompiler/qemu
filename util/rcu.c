@@ -464,6 +464,10 @@ static void rcu_init_child(void)
 
 static void __attribute__((__constructor__)) rcu_init(void)
 {
+#ifdef CONFIG_JOVE
+    return;
+#endif
+
     smp_mb_global_init();
 #ifdef CONFIG_POSIX
     pthread_atfork(rcu_init_lock, rcu_init_unlock, rcu_init_child);
