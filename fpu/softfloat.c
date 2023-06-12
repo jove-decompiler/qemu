@@ -97,7 +97,7 @@ this code that are retained.
 *----------------------------------------------------------------------------*/
 #include "fpu/softfloat-macros.h"
 
-#ifdef CONFIG_JOVE
+#if defined(CONFIG_JOVE_HELPERS)
 
 static float jv_soft_fmaf(float x, float y, float z) { return (x * y) + z; }
 static double jv_soft_fma(double x, double y, double z) { return (x * y) + z; }
