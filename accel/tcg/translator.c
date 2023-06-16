@@ -184,8 +184,10 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             plugin_gen_insn_start(cpu, db);
         }
 
+#ifndef TARGET_MIPS /* XXX delay slot */
 #ifdef CONFIG_JOVE
         jv_term_addr_is(db->pc_next);
+#endif
 #endif
 
         /* Disassemble one instruction.  The translate_insn hook should
@@ -233,7 +235,7 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
 
 #ifdef CONFIG_JOVE
             if (jv_is_term_unknown())
-              jv_term_is_none(db->pc_next);
+                jv_term_is_none(db->pc_next);
 #endif
             break;
         }
@@ -243,8 +245,10 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             if (db->pc_next >= jv_get_end_pc()) {
                 db->is_jmp = DISAS_TOO_MANY;
 
-                jv_term_is_none(db->pc_next);
-                jv_term_addr_is(0); /* XXX */
+                if (jv_is_term_unknown()) {
+                    jv_term_addr_is(0); /* XXX */
+                    jv_term_is_none(jv_get_end_pc());
+                }
                 break;
             }
         }

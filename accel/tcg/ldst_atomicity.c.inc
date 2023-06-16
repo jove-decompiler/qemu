@@ -1013,6 +1013,15 @@ static void store_atom_4(CPUArchState *env, uintptr_t ra,
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static void store_atom_8(CPUArchState *env, uintptr_t ra,
+                         void *pv, MemOp memop, uint64_t val) {
+    stq_he_p(pv, val);
+}
+
+#else
+
 /**
  * store_atom_8:
  * @p: host address
@@ -1077,6 +1086,8 @@ static void store_atom_8(CPUArchState *env, uintptr_t ra,
     }
     cpu_loop_exit_atomic(env_cpu(env), ra);
 }
+
+#endif
 
 #ifdef CONFIG_JOVE_HELPERS
 

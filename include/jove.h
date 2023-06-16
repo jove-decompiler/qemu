@@ -41,6 +41,14 @@ JV_FUNC_ATTR bool jv_is_term_unknown(void);
 JV_FUNC_ATTR uint64_t jv_get_end_pc(void);
 JV_FUNC_ATTR void jv_term_addr_is(uint64_t Addr);
 
+JV_FUNC_ATTR bool jv_is_term_ind_call(void);
+JV_FUNC_ATTR bool jv_is_term_call(void);
+
+JV_FUNC_ATTR void jv_ind_call_term_next_pc_is(uint64_t NextPC);
+JV_FUNC_ATTR void jv_call_term_next_pc_is(uint64_t NextPC);
+
+JV_FUNC_ATTR void jv_set_end_pc(uint64_t);
+
 #ifdef __cplusplus
 }
 #endif

@@ -36,6 +36,9 @@
 #include "exec/helper-info.c.inc"
 #undef  HELPER_H
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
 
 /*
  * Many sysemu-only helpers are not reachable for user-only.
@@ -1347,6 +1350,10 @@ void generate_exception_err(DisasContext *ctx, int excp, int err)
     gen_helper_raise_exception_err(cpu_env, tcg_constant_i32(excp),
                                    tcg_constant_i32(err));
     ctx->base.is_jmp = DISAS_NORETURN;
+
+#ifdef CONFIG_JOVE
+    jv_term_is_unreachable();
+#endif
 }
 
 void generate_exception(DisasContext *ctx, int excp)
@@ -2982,12 +2989,18 @@ static inline void gen_pcrel(DisasContext *ctx, int opc, target_ulong pc,
         if (rs != 0) {
             offset = sextract32(ctx->opcode << 2, 0, 21);
             addr = addr_add(ctx, pc, offset);
+#ifdef CONFIG_JOVE
+            tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
             tcg_gen_movi_tl(cpu_gpr[rs], addr);
         }
         break;
     case R6_OPC_LWPC:
         offset = sextract32(ctx->opcode << 2, 0, 21);
         addr = addr_add(ctx, pc, offset);
+#ifdef CONFIG_JOVE
+        tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
         gen_r6_ld(addr, rs, ctx->mem_idx, MO_TESL);
         break;
 #if defined(TARGET_MIPS64)
@@ -3004,12 +3017,18 @@ static inline void gen_pcrel(DisasContext *ctx, int opc, target_ulong pc,
             if (rs != 0) {
                 offset = sextract32(ctx->opcode, 0, 16) << 16;
                 addr = addr_add(ctx, pc, offset);
+#ifdef CONFIG_JOVE
+                tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
                 tcg_gen_movi_tl(cpu_gpr[rs], addr);
             }
             break;
         case OPC_ALUIPC:
             if (rs != 0) {
                 offset = sextract32(ctx->opcode, 0, 16) << 16;
+#ifdef CONFIG_JOVE
+                tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
                 addr = ~0xFFFF & addr_add(ctx, pc, offset);
                 tcg_gen_movi_tl(cpu_gpr[rs], addr);
             }
@@ -4503,6 +4522,10 @@ static void gen_trap(DisasContext *ctx, uint32_t opc,
                            offsetof(CPUMIPSState, error_code));
 #endif
             generate_exception_end(ctx, EXCP_TRAP);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_none(ctx->base.pc_next);
+#endif
             break;
         case OPC_TLT:   /* rs < rs           */
         case OPC_TLTI:  /* r0 < 0            */
@@ -4605,6 +4628,14 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
             bcond_compute = 1;
         }
         btgt = ctx->base.pc_next + insn_bytes + offset;
+
+#ifdef CONFIG_JOVE
+        if (bcond_compute) {
+            jv_term_is_cond_jump(btgt, ctx->base.pc_next + 2 * insn_bytes);
+        } else {
+            jv_term_is_uncond_jump(btgt);
+        }
+#endif
         break;
     case OPC_BGEZ:
     case OPC_BGEZAL:
@@ -4624,6 +4655,14 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
             bcond_compute = 1;
         }
         btgt = ctx->base.pc_next + insn_bytes + offset;
+
+#ifdef CONFIG_JOVE
+        if (bcond_compute) {
+            jv_term_is_cond_jump(btgt, ctx->base.pc_next + 2 * insn_bytes);
+        } else {
+            jv_term_is_uncond_jump(btgt);
+        }
+#endif
         break;
     case OPC_BPOSGE32:
 #if defined(TARGET_MIPS64)
@@ -4643,12 +4682,24 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
                                                         : 0xF0000000;
             btgt = ((ctx->base.pc_next + insn_bytes) & jal_mask)
                    | (uint32_t)offset;
+
+#ifdef CONFIG_JOVE
+            if (opc == OPC_J) {
+                jv_term_is_uncond_jump(btgt);
+            } else {
+                jv_term_is_call(btgt, ctx->base.pc_next + 2 * insn_bytes);
+            }
+#endif
             break;
         }
     case OPC_JALX:
         /* Jump to immediate */
         btgt = ((ctx->base.pc_next + insn_bytes) & (int32_t)0xF0000000) |
             (uint32_t)offset;
+
+#ifdef CONFIG_JOVE
+        jv_term_is_call(btgt, ctx->base.pc_next + 2 * insn_bytes);
+#endif
         break;
     case OPC_JR:
     case OPC_JALR:
@@ -4662,6 +4713,22 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
             gen_reserved_instruction(ctx);
             goto out;
         }
+
+#ifdef CONFIG_JOVE
+        if (opc == OPC_JR) {
+          if (rs == 31) { /* jr ra */
+            jv_term_is_return();
+          } else {
+            jv_term_is_ind_jump();
+          }
+        } else if (opc == OPC_JALR) {
+          jv_term_is_ind_call(ctx->base.pc_next + 2 * insn_bytes);
+        } else {
+          __builtin_trap();
+          __builtin_unreachable();
+        }
+#endif
+
         gen_load_gpr(btarget, rs);
         break;
     default:
@@ -4686,6 +4753,10 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
             /* Always take and link */
             blink = 31;
             ctx->hflags |= MIPS_HFLAG_B;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_call(btgt, ctx->base.pc_next + 2 * insn_bytes);
+#endif
             break;
         case OPC_BNE:     /* rx != rx        */
         case OPC_BGTZ:    /* 0 > 0           */
@@ -4700,8 +4771,15 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
             blink = 31;
             btgt = ctx->base.pc_next + insn_bytes + delayslot_size;
             ctx->hflags |= MIPS_HFLAG_B;
+
+#ifdef CONFIG_JOVE
+            jv_term_is_uncond_jump(btgt);
+#endif
             break;
         case OPC_BLTZALL: /* 0 < 0 likely */
+#ifdef CONFIG_JOVE
+            tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
             tcg_gen_movi_tl(cpu_gpr[31], ctx->base.pc_next + 8);
             /* Skip the instruction in the delay slot */
             ctx->base.pc_next += 4;
@@ -4822,6 +4900,16 @@ static void gen_compute_branch(DisasContext *ctx, uint32_t opc,
         int post_delay = insn_bytes + delayslot_size;
         int lowbit = !!(ctx->hflags & MIPS_HFLAG_M16);
 
+#ifdef CONFIG_JOVE
+        {
+            int64_t NextPC = ctx->base.pc_next + post_delay + lowbit;
+
+            if (jv_is_term_ind_call()) jv_ind_call_term_next_pc_is(NextPC);
+            else if (jv_is_term_call())    jv_call_term_next_pc_is(NextPC);
+        }
+
+        tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
         tcg_gen_movi_tl(cpu_gpr[blink],
                         ctx->base.pc_next + post_delay + lowbit);
     }
@@ -11293,6 +11381,9 @@ static void gen_compute_compact_branch(DisasContext *ctx, uint32_t opc,
         ctx->btarget = addr_add(ctx, ctx->base.pc_next + 4, offset);
         if (rs <= rt && rs == 0) {
             /* OPC_BEQZALC, OPC_BNEZALC */
+#ifdef CONFIG_JOVE
+            tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
             tcg_gen_movi_tl(cpu_gpr[31], ctx->base.pc_next + 4 + m16_lowbit);
         }
         break;
@@ -13584,9 +13675,17 @@ static void decode_opc_special(CPUMIPSState *env, DisasContext *ctx)
         break;
     case OPC_SYSCALL:
         generate_exception_end(ctx, EXCP_SYSCALL);
+
+#ifdef CONFIG_JOVE
+        jv_term_is_none(ctx->base.pc_next + 4);
+#endif
         break;
     case OPC_BREAK:
         generate_exception_break(ctx, extract32(ctx->opcode, 6, 20));
+
+#ifdef CONFIG_JOVE
+        jv_term_is_none(ctx->base.pc_next + 4);
+#endif
         break;
     case OPC_SYNC:
         check_insn(ctx, ISA_MIPS2);
@@ -15058,6 +15157,10 @@ static bool decode_opc_legacy(CPUMIPSState *env, DisasContext *ctx)
             check_insn_opc_removed(ctx, ISA_MIPS_R6);
             gen_compute_branch1(ctx, MASK_BC1(ctx->opcode),
                                 (rt >> 2) & 0x7, imm << 2);
+
+#ifdef CONFIG_JOVE
+            jv_term_is_cond_jump(ctx->btarget, ctx->base.pc_next + 2 * 4);
+#endif
             break;
         case OPC_PS_FMT:
             check_ps(ctx);
@@ -15452,6 +15555,9 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
     int insn_bytes;
     int is_slot;
+#ifdef CONFIG_JOVE
+    int jv_is_slot;
+#endif
 
     is_slot = ctx->hflags & MIPS_HFLAG_BMASK;
     if (ctx->insn_flags & ISA_NANOMIPS32) {
@@ -15472,6 +15578,9 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
         g_assert(ctx->base.is_jmp == DISAS_NORETURN);
         return;
     }
+#ifdef CONFIG_JOVE
+    jv_is_slot = ctx->hflags & MIPS_HFLAG_BMASK;
+#endif
 
     if (ctx->hflags & MIPS_HFLAG_BMASK) {
         if (!(ctx->hflags & (MIPS_HFLAG_BDS16 | MIPS_HFLAG_BDS32 |
@@ -15497,12 +15606,21 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
     if (ctx->base.is_jmp == DISAS_SEMIHOST) {
         generate_exception_err(ctx, EXCP_SEMIHOST, insn_bytes);
     }
+#ifdef CONFIG_JOVE
+    if (jv_is_slot) {
+        if (jv_get_end_pc())
+            jv_set_end_pc(jv_get_end_pc() + 4);
+    } else {
+        jv_term_addr_is(ctx->base.pc_next);
+    }
+#endif
     ctx->base.pc_next += insn_bytes;
 
     if (ctx->base.is_jmp != DISAS_NEXT) {
         return;
     }
 
+#ifndef CONFIG_JOVE
     /*
      * End the TB on (most) page crossings.
      * See mips_tr_init_disas_context about single-stepping a branch
@@ -15512,6 +15630,7 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
         && !ctx->base.singlestep_enabled) {
         ctx->base.is_jmp = DISAS_TOO_MANY;
     }
+#endif
 }
 
 static void mips_tr_tb_stop(DisasContextBase *dcbase, CPUState *cs)
@@ -15561,6 +15680,15 @@ void gen_intermediate_code(CPUState *cs, TranslationBlock *tb, int *max_insns,
 
     translator_loop(cs, tb, max_insns, pc, host_pc, &mips_tr_ops, &ctx.base);
 }
+
+#ifdef CONFIG_JOVE
+
+int jv_hflags_of_cpu_env(CPUState *cpu) {
+    return cpu->env_ptr->hflags &
+           (MIPS_HFLAG_TMASK | MIPS_HFLAG_BMASK | MIPS_HFLAG_HWRENA_ULR);
+}
+
+#endif
 
 void mips_tcg_init(void)
 {

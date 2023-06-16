@@ -137,6 +137,8 @@ const char *mips_exception_name(int32_t exception)
     return excp_names[exception];
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 void do_raise_exception_err(CPUMIPSState *env, uint32_t exception,
                             int error_code, uintptr_t pc)
 {
@@ -150,3 +152,5 @@ void do_raise_exception_err(CPUMIPSState *env, uint32_t exception,
 
     cpu_loop_exit_restore(cs, pc);
 }
+
+#endif
