@@ -97,7 +97,7 @@ this code that are retained.
 *----------------------------------------------------------------------------*/
 #include "fpu/softfloat-macros.h"
 
-#if defined(CONFIG_JOVE_HELPERS)
+#if defined(JOVE_LIBFPU)
 
 static float jv_soft_fmaf(float x, float y, float z) { return (x * y) + z; }
 static double jv_soft_fma(double x, double y, double z) { return (x * y) + z; }
@@ -107,6 +107,50 @@ static void jv_abort(void)  { __builtin_trap(); __builtin_unreachable(); }
 #define fmaf jv_soft_fmaf
 #define fma jv_soft_fma
 #define abort jv_abort
+
+#if defined(__i386__) | defined(__mips__)
+
+static inline void mul64(uint64_t *plow, uint64_t *phigh,
+                         uint64_t a, uint64_t b)
+{
+    typedef union {
+        uint64_t ll;
+        struct {
+#if HOST_BIG_ENDIAN
+            uint32_t high, low;
+#else
+            uint32_t low, high;
+#endif
+        } l;
+    } LL;
+    LL rl, rm, rn, rh, a0, b0;
+    uint64_t c;
+
+    a0.ll = a;
+    b0.ll = b;
+
+    rl.ll = (uint64_t)a0.l.low * b0.l.low;
+    rm.ll = (uint64_t)a0.l.low * b0.l.high;
+    rn.ll = (uint64_t)a0.l.high * b0.l.low;
+    rh.ll = (uint64_t)a0.l.high * b0.l.high;
+
+    c = (uint64_t)rl.l.high + rm.l.low + rn.l.low;
+    rl.l.high = c;
+    c >>= 32;
+    c = c + rm.l.high + rn.l.high + rh.l.low;
+    rh.l.low = c;
+    rh.l.high += (uint32_t)(c >> 32);
+
+    *plow = rl.ll;
+    *phigh = rh.ll;
+}
+
+void mulu64 (uint64_t *plow, uint64_t *phigh, uint64_t a, uint64_t b)
+{
+    mul64(plow, phigh, a, b);
+}
+
+#endif
 
 __attribute__((__nothrow__)) __attribute__((__noreturn__)) void
 __assert_fail(const char *__assertion, const char *__file, unsigned int __line,
