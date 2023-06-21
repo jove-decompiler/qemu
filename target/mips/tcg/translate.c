@@ -15560,6 +15560,11 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
 #endif
 
     is_slot = ctx->hflags & MIPS_HFLAG_BMASK;
+#ifdef CONFIG_JOVE
+    jv_is_slot = ctx->hflags & MIPS_HFLAG_BMASK;
+    if (!jv_is_slot)
+        jv_term_addr_is(ctx->base.pc_next);
+#endif
     if (ctx->insn_flags & ISA_NANOMIPS32) {
         ctx->opcode = translator_lduw(env, &ctx->base, ctx->base.pc_next);
         insn_bytes = decode_isa_nanomips(env, ctx);
@@ -15578,9 +15583,6 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
         g_assert(ctx->base.is_jmp == DISAS_NORETURN);
         return;
     }
-#ifdef CONFIG_JOVE
-    jv_is_slot = ctx->hflags & MIPS_HFLAG_BMASK;
-#endif
 
     if (ctx->hflags & MIPS_HFLAG_BMASK) {
         if (!(ctx->hflags & (MIPS_HFLAG_BDS16 | MIPS_HFLAG_BDS32 |
@@ -15607,11 +15609,11 @@ static void mips_tr_translate_insn(DisasContextBase *dcbase, CPUState *cs)
         generate_exception_err(ctx, EXCP_SEMIHOST, insn_bytes);
     }
 #ifdef CONFIG_JOVE
+    jv_is_slot = ctx->hflags & MIPS_HFLAG_BMASK;
     if (jv_is_slot) {
         if (jv_get_end_pc())
             jv_set_end_pc(jv_get_end_pc() + 4);
     } else {
-        jv_term_addr_is(ctx->base.pc_next);
     }
 #endif
     ctx->base.pc_next += insn_bytes;
