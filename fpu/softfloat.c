@@ -108,7 +108,7 @@ static void jv_abort(void)  { __builtin_trap(); __builtin_unreachable(); }
 #define fma jv_soft_fma
 #define abort jv_abort
 
-#if defined(__i386__) | defined(__mips__)
+#if defined(__i386__) || (defined(__mips__) && !defined(__mips64))
 
 static inline void mul64(uint64_t *plow, uint64_t *phigh,
                          uint64_t a, uint64_t b)
