@@ -1507,6 +1507,9 @@ static bool trans_BLR(DisasContext *s, arg_r *a)
         tcg_gen_mov_i64(tmp, dst);
         dst = tmp;
     }
+#ifdef CONFIG_JOVE
+    tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
     gen_pc_plus_diff(s, lr, curr_insn_len(s));
     gen_a64_set_pc(s, dst);
     set_btype_for_blr(s);
