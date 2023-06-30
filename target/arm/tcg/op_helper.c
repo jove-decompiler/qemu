@@ -624,6 +624,16 @@ uint32_t HELPER(mrs_banked)(CPUARMState *env, uint32_t tgtmode, uint32_t regno)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
+                                        uint32_t syndrome, uint32_t isread) {
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
                                         uint32_t syndrome, uint32_t isread)
 {
@@ -755,6 +765,18 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
     raise_exception(env, EXCP_UDEF, syndrome, target_el);
 }
 
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
 {
     ARMCPU *cpu = env_archcpu(env);
@@ -763,6 +785,18 @@ const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
     assert(ri != NULL);
     return ri;
 }
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
 
 void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
 {
@@ -776,6 +810,18 @@ void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
         ri->writefn(env, ri, value);
     }
 }
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
 
 uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
 {
@@ -793,6 +839,18 @@ uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
     return res;
 }
 
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
 {
     const ARMCPRegInfo *ri = rip;
@@ -805,6 +863,18 @@ void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
         ri->writefn(env, ri, value);
     }
 }
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
 
 uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 {
@@ -821,6 +891,8 @@ uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 
     return res;
 }
+
+#endif
 
 void HELPER(pre_hvc)(CPUARMState *env)
 {
