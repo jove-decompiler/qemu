@@ -3237,6 +3237,16 @@ extern const uint64_t pred_esz_masks[5];
 #endif
 
 #ifdef TARGET_TAGGED_ADDRESSES
+
+#ifdef CONFIG_JOVE_HELPERS
+
+static inline target_ulong cpu_untagged_addr(CPUState *cs, target_ulong x)
+{
+    return x;
+}
+
+#else
+
 /**
  * cpu_untagged_addr:
  * @cs: CPU context
@@ -3260,6 +3270,9 @@ static inline target_ulong cpu_untagged_addr(CPUState *cs, target_ulong x)
     }
     return x;
 }
+
+#endif
+
 #endif
 
 /*
