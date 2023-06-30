@@ -771,8 +771,7 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
 
 const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
 {
-    __builtin_trap();
-    __builtin_unreachable();
+    return (void *)((uintptr_t)key);
 }
 
 #else
@@ -870,6 +869,13 @@ void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
 
 uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 {
+    uint32_t key = (uint32_t)((uintptr_t)rip);
+    if (key == 0x1013d807) {
+        uint64_t res;
+        asm volatile("mrs %0, dczid_el0" : "=r"(res));
+        return res;
+    }
+
     __builtin_trap();
     __builtin_unreachable();
 }
