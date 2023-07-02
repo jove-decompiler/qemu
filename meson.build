@@ -3337,11 +3337,13 @@ endif
 qom_ss = qom_ss.apply(config_host, strict: false)
 libqom = static_library('qom', qom_ss.sources() + genh,
                         dependencies: [qom_ss.dependencies()],
+                        pic: get_option('jove'),
                         name_suffix: 'fa')
 qom = declare_dependency(link_whole: libqom)
 
 event_loop_base = files('event-loop-base.c')
 event_loop_base = static_library('event-loop-base', sources: event_loop_base + genh,
+                                 pic: get_option('jove'),
                                  build_by_default: true)
 event_loop_base = declare_dependency(link_whole: event_loop_base,
                                      dependencies: [qom])
@@ -3352,6 +3354,7 @@ util_ss.add_all(trace_ss)
 util_ss = util_ss.apply(config_all, strict: false)
 libqemuutil = static_library('qemuutil',
                              sources: util_ss.sources() + stub_ss.sources() + genh,
+                             pic: get_option('jove'),
                              dependencies: [util_ss.dependencies(), libm, threads, glib, socket, malloc, pixman])
 qemuutil = declare_dependency(link_with: libqemuutil,
                               sources: genh + version_res,
@@ -3641,6 +3644,7 @@ chardev = declare_dependency(link_whole: libchardev)
 hwcore_ss = hwcore_ss.apply(config_host, strict: false)
 libhwcore = static_library('hwcore', sources: hwcore_ss.sources() + genh,
                            name_suffix: 'fa',
+                           pic: get_option('jove'),
                            build_by_default: false)
 hwcore = declare_dependency(link_whole: libhwcore)
 common_ss.add(hwcore)
@@ -3675,6 +3679,7 @@ common_all = static_library('common',
                             include_directories: common_user_inc,
                             implicit_include_directories: false,
                             dependencies: common_all.dependencies(),
+                            pic: get_option('jove'),
                             name_suffix: 'fa')
 
 feature_to_c = find_program('scripts/feature_to_c.sh')
@@ -3774,6 +3779,7 @@ foreach target : target_dirs
                  objects: objects,
                  include_directories: target_inc,
                  c_args: c_args,
+                 pic: get_option('jove'),
                  build_by_default: false,
                  name_suffix: 'fa')
 
@@ -3826,6 +3832,16 @@ foreach target : target_dirs
       exe_name += '-unsigned'
     endif
 
+    if get_option('jove')
+    emulator = shared_library(exe_name, exe['sources'],
+               install: true,
+               c_args: c_args,
+               dependencies: arch_deps + deps + exe['dependencies'],
+               objects: lib.extract_all_objects(recursive: true),
+               link_language: link_language,
+               link_depends: [block_syms, qemu_syms] + exe.get('link_depends', []),
+               link_args: link_args + ['-Wl,--unresolved-symbols=ignore-all', '-Wl,--allow-shlib-undefined'])
+    else
     emulator = executable(exe_name, exe['sources'],
                install: true,
                c_args: c_args,
@@ -3835,6 +3851,7 @@ foreach target : target_dirs
                link_depends: [block_syms, qemu_syms] + exe.get('link_depends', []),
                link_args: link_args,
                win_subsystem: exe['win_subsystem'])
+    endif
 
     if targetos == 'darwin'
       icon = 'pc-bios/qemu.rsrc'

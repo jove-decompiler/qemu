@@ -21,6 +21,7 @@ libgdb_user = static_library('gdb_user',
                              gdb_user_ss.sources() + genh,
                              name_suffix: 'fa',
                              c_args: '-DCONFIG_USER_ONLY',
+                             pic: get_option('jove'),
                              build_by_default: have_user)
 
 libgdb_softmmu = static_library('gdb_softmmu',

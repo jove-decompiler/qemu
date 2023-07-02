@@ -1,6 +1,6 @@
 #pragma once
 
-#define JV_FUNC_ATTR __attribute__((visibility("hidden")))
+#define JV_FUNC_ATTR __attribute__((visibility("default")))
 
 #ifdef __cplusplus
 extern "C" {
