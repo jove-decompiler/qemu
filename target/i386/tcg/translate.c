@@ -3153,6 +3153,7 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
     {
       const void *code = g2h_untagged(s->pc);
 
+#if defined(TARGET_I386)
       //
       // XXX hack for call dword ptr gs:[16]
       //
@@ -3166,6 +3167,7 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
         jv_term_is_none(s->pc - s->cs_base);
         return s->pc;
       }
+#endif
 
       //
       // XXX hack for XOP instructions
