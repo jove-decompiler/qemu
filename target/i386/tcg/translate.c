@@ -3151,13 +3151,26 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
 
 #ifdef CONFIG_JOVE
     {
-      //
-      // (jove) hack for XOP instructions
-      //
-      uint32_t l = cpu_ldl_code(env, s->pc);
-      //const void *code = g2h(s->pc, env);
+      const void *code = g2h_untagged(s->pc);
 
-      if (l == 0xc278e88f) {
+      //
+      // XXX hack for call dword ptr gs:[16]
+      //
+      const uint8_t needle[] = {0x65, 0xff, 0x15, 0x10, 0x00, 0x00, 0x00};
+
+      if (memcmp(code, needle, sizeof(needle)) == 0) {
+        /* int 0x80 */
+        gen_interrupt(s, 0x80);
+        s->pc += sizeof(needle); /* advance pc */
+
+        jv_term_is_none(s->pc - s->cs_base);
+        return s->pc;
+      }
+
+      //
+      // XXX hack for XOP instructions
+      //
+      if (*((const uint32_t *)(code)) == 0xc278e88f) {
         s->pc += 6;
         goto illegal_op;
       }
