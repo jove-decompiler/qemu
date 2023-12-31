@@ -15690,6 +15690,11 @@ int jv_hflags_of_cpu_env(CPUState *cpu) {
            (MIPS_HFLAG_TMASK | MIPS_HFLAG_BMASK | MIPS_HFLAG_HWRENA_ULR);
 }
 
+bool jv_are_on_delay_slot(DisasContextBase *dcbase) {
+    DisasContext *ctx = container_of(dcbase, DisasContext, base);
+    return !!(ctx->hflags & MIPS_HFLAG_BMASK);
+}
+
 #endif
 
 void mips_tcg_init(void)
