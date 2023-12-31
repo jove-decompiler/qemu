@@ -234,10 +234,19 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             db->is_jmp = DISAS_TOO_MANY;
 
 #ifdef CONFIG_JOVE
+#ifdef TARGET_MIPS
+extern bool jv_are_on_delay_slot(DisasContextBase *);
+
+            if (!jv_are_on_delay_slot(db)) {
+#endif
+
             if (jv_is_term_unknown())
                 jv_term_is_none(db->pc_next);
 #endif
             break;
+#if defined(CONFIG_JOVE) && defined(TARGET_MIPS)
+            }
+#endif
         }
 
 #ifdef CONFIG_JOVE
