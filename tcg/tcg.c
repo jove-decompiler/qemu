@@ -413,6 +413,9 @@ static int tlb_mask_table_ofs(TCGContext *s, int which)
 static G_NORETURN
 void tcg_raise_tb_overflow(TCGContext *s)
 {
+#ifdef CONFIG_JOVE
+    assert(false && "tcg_raise_tb_overflow!");
+#endif
     siglongjmp(s->jmp_trans, -2);
 }
 
