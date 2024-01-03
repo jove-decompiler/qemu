@@ -30,6 +30,9 @@
 
 #define QEMU_ALIGNED(X) __attribute__((aligned(X)))
 
+#define ___4116N_ QEMU_ALIGNED(16)
+#define ___4132N_ QEMU_ALIGNED(32)
+
 #ifndef glue
 #define xglue(x, y) x ## y
 #define glue(x, y) xglue(x, y)
