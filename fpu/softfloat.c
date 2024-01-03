@@ -101,9 +101,18 @@ this code that are retained.
 
 static float jv_soft_fmaf(float x, float y, float z) { return (x * y) + z; }
 static double jv_soft_fma(double x, double y, double z) { return (x * y) + z; }
-static double jv_sqrt(double x) { __builtin_trap(); __builtin_unreachable(); }
-static float jv_sqrtf(float x) { __builtin_trap(); __builtin_unreachable(); }
-static void jv_abort(void)  { __builtin_trap(); __builtin_unreachable(); }
+static double jv_sqrt(double x) {
+  if (x <= 0.0)
+    return 0.0;
+  float guess = x / 2.0;
+  for (int i = 0; i < 10; ++i) { // Iterate for better accuracy
+    guess = (guess + x / guess) / 2.0;
+  }
+  return guess;
+}
+static float jv_sqrtf(float x) { return (float)jv_sqrt((double)x); }
+static void jv_abort(void)  { for (;;); }
+
 #define fmaf jv_soft_fmaf
 #define fma jv_soft_fma
 #define abort jv_abort
@@ -155,15 +164,13 @@ void mulu64 (uint64_t *plow, uint64_t *phigh, uint64_t a, uint64_t b)
 __attribute__((__nothrow__)) __attribute__((__noreturn__)) void
 __assert_fail(const char *__assertion, const char *__file, unsigned int __line,
               const char *__function) {
-  __builtin_trap();
-  __builtin_unreachable();
+  for (;;);
 }
 
 __attribute__((__noreturn__)) void
 g_assertion_message_expr(const char *domain, const char *file, int line,
                          const char *func, const char *expr) {
-  __builtin_trap();
-  __builtin_unreachable();
+  for (;;);
 }
 
 #else
