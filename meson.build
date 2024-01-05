@@ -440,6 +440,17 @@ endif
 add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
 
+if get_option('jove_helpers')
+  add_global_arguments('-Xclang', '-load', \
+                       '-Xclang', '/jove/carbon-copy/build/collect/libcarbon-collect.so', \
+                       '-Xclang', '-add-plugin', \
+                       '-Xclang', 'carbon-collect', \
+                       '-Xclang', '-plugin-arg-carbon-collect', \
+                       '-Xclang', meson.source_root(), \
+                       '-Xclang', '-plugin-arg-carbon-collect', \
+                       '-Xclang', meson.current_build_dir(), language : 'c')
+endif
+
 # Collect warnings that we want to enable
 
 warn_flags = [
