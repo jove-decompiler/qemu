@@ -12128,6 +12128,3 @@ void aarch64_sve_change_el(CPUARMState *env, int old_el,
     }
 }
 #endif
-
-#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
-#endif
