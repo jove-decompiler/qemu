@@ -18,7 +18,9 @@
 #include "qemu/crc32c.h"
 #include "qemu/qemu-print.h"
 #include "exec/exec-all.h"
+#if !(defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS))
 #include <zlib.h> /* For crc32 */
+#endif
 #include "hw/irq.h"
 #include "sysemu/cpu-timers.h"
 #include "sysemu/kvm.h"
@@ -11594,6 +11596,10 @@ uint32_t HELPER(sel_flags)(uint32_t flags, uint32_t a, uint32_t b)
     return (a & mask) | (b & ~mask);
 }
 
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#include "linux_aarch64_crc32.c"
+#endif
+
 /*
  * CRC helpers.
  * The upper bytes of val (above the number specified by 'bytes') must have
@@ -12121,4 +12127,7 @@ void aarch64_sve_change_el(CPUARMState *env, int old_el,
         aarch64_sve_narrow_vq(env, new_len + 1);
     }
 }
+#endif
+
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
 #endif
