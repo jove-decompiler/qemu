@@ -33,7 +33,9 @@
 #include "qemu/int128.h"
 #include "qemu/atomic128.h"
 #include "fpu/softfloat.h"
+#if !(defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS))
 #include <zlib.h> /* For crc32 */
+#endif
 
 /* C2.4.7 Multiply and divide */
 /* special cases for 0 and LLONG_MIN are mandated by the standard */
@@ -476,6 +478,10 @@ float32 HELPER(fcvtx_f64_to_f32)(float64 a, CPUARMState *env)
     set_float_exception_flags(exflags, fpst);
     return r;
 }
+
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#include "linux_aarch64_crc32.c"
+#endif
 
 /* 64-bit versions of the CRC helpers. Note that although the operation
  * (and the prototypes of crc32c() and crc32() mean that only the bottom
