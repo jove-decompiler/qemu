@@ -399,6 +399,20 @@ void HELPER(exception_with_syndrome_el)(CPUARMState *env, uint32_t excp,
     raise_exception(env, excp, syndrome, target_el);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
+                                     uint32_t syndrome)
+{
+    (void)EXCP_SWI;
+
+#include "jove_do_syscall.h"
+
+    __builtin_unreachable();
+}
+
+#else
+
 /*
  * Raise an exception with the specified syndrome register value
  * to the default target el.
@@ -408,6 +422,8 @@ void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
 {
     raise_exception(env, excp, syndrome, exception_target_el(env));
 }
+
+#endif
 
 uint32_t HELPER(cpsr_read)(CPUARMState *env)
 {
