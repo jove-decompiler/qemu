@@ -2860,6 +2860,13 @@ void jv_EXTRACT_ME(TCGContext *s, TCGOp *op, TCGArg a) {
   }
 }
 
+#undef helper_memset
+
+__attribute__((visibility("hidden"))) void *helper_memset(void *, int, size_t);
+void *helper_memset(void *s, int c, size_t n) {
+  return __builtin_memset(s, c, n);
+}
+
 #endif
 
 /* we give more priority to constraints with less registers */
