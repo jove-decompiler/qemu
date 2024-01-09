@@ -2826,7 +2826,9 @@ do_gen_eob_worker(DisasContext *s, bool inhibit, bool recheck_tf, bool jr)
         gen_reset_eflags(s, RF_MASK);
     }
     if (recheck_tf) {
+#ifndef CONFIG_JOVE
         gen_helper_rechecking_single_step(cpu_env);
+#endif
         tcg_gen_exit_tb(NULL, 0);
     } else if (s->flags & HF_TF_MASK) {
         gen_helper_single_step(cpu_env);
