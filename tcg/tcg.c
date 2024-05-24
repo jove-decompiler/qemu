@@ -756,10 +756,31 @@ static void alloc_tcg_plugin_context(TCGContext *s)
  * over the array (e.g. tcg_code_size() the same for both softmmu and user-mode.
  */
 #ifdef CONFIG_USER_ONLY
+#ifdef CONFIG_JOVE
+void tcg_register_thread(void)
+{
+    TCGContext *s = g_malloc(sizeof(*s));
+    unsigned int i, n;
+
+    *s = tcg_init_ctx;
+
+    /* Relink mem_base.  */
+    for (i = 0, n = tcg_init_ctx.nb_globals; i < n; ++i) {
+        if (tcg_init_ctx.temps[i].mem_base) {
+            ptrdiff_t b = tcg_init_ctx.temps[i].mem_base - tcg_init_ctx.temps;
+            tcg_debug_assert(b >= 0 && b < n);
+            s->temps[i].mem_base = &s->temps[b];
+        }
+    }
+
+    tcg_ctx = s;
+}
+#else
 void tcg_register_thread(void)
 {
     tcg_ctx = &tcg_init_ctx;
 }
+#endif
 #else
 void tcg_register_thread(void)
 {
