@@ -442,7 +442,7 @@ add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
 
 if get_option('jove_helpers')
   add_global_arguments('-Xclang', '-load', \
-                       '-Xclang', '/jove/carbon-copy/build/collect/libcarbon-collect.so', \
+                       '-Xclang', '/usr/local/lib/libcarbon-collect.so', \
                        '-Xclang', '-add-plugin', \
                        '-Xclang', 'carbon-collect', \
                        '-Xclang', '-plugin-arg-carbon-collect', \
