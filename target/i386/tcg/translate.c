@@ -2122,11 +2122,16 @@ static uint64_t advance_pc(CPUX86State *env, DisasContext *s, int num_bytes)
     /* This is a subsequent insn that crosses a page boundary.  */
     if (s->base.num_insns > 1 &&
         !is_same_page(&s->base, s->pc + num_bytes - 1)) {
+#ifndef CONFIG_JOVE
         siglongjmp(s->jmpbuf, 2);
+#endif
     }
 
     s->pc += num_bytes;
     if (unlikely(cur_insn_len(s) > X86_MAX_INSN_LENGTH)) {
+#ifdef CONFIG_JOVE
+        assert(false && "X86_MAX_INSN_LENGTH");
+#endif
         /* If the instruction's 16th byte is on a different page than the 1st, a
          * page fault on the second page wins over the general protection fault
          * caused by the instruction being too long.
