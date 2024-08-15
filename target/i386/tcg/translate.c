@@ -2581,7 +2581,7 @@ static inline void gen_stack_update(DisasContext *s, int addend)
 }
 
 #ifdef CONFIG_JOVE
-bool gen_push_v_PCRel = false;
+static __thread bool gen_push_v_PCRel = false;
 #endif
 
 /* Generate a push. It depends on ss32, addseg and dflag.  */
