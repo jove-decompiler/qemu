@@ -49,6 +49,8 @@ JV_FUNC_ATTR void jv_call_term_next_pc_is(uint64_t NextPC);
 
 JV_FUNC_ATTR void jv_set_end_pc(uint64_t);
 
+JV_FUNC_ATTR void jv_illegal_op(uint64_t PC);
+
 #ifdef __cplusplus
 }
 #endif

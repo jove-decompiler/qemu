@@ -1460,7 +1460,7 @@ static void gen_illegal_opcode(DisasContext *s)
     gen_exception(s, EXCP06_ILLOP);
 
 #ifdef CONFIG_JOVE
-    jv_term_is_unreachable();
+    jv_illegal_op(s->pc_save);
 #endif
 }
 
@@ -3181,7 +3181,8 @@ static bool disas_insn(DisasContext *s, CPUState *cpu)
       //
       if (*((const uint32_t *)(code)) == 0xc278e88f) {
         s->pc += 6;
-        goto illegal_op;
+        jv_term_is_unreachable();
+        return true;
       }
     }
 #endif
