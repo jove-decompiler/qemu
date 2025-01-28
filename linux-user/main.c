@@ -674,6 +674,13 @@ static int parse_args(int argc, char **argv)
 #ifdef CONFIG_JOVE
 CPUState *jv_cpu = NULL;
 
+static void _jove_check_did(const bool *did) {
+  if (!(*did)) {
+    printf("(BUG) !_jove_check_did\n");
+    _exit(EXIT_FAILURE);
+  }
+}
+
 int jv_init_libqemu(const char *_binpath)
 #else
 int main(int argc, char **argv, char **envp)
@@ -682,6 +689,7 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_JOVE
     int argc = 2;
     char *argv[] = {(char *)"", (char *)_binpath, NULL};
+    bool __jove_did __attribute__((cleanup(_jove_check_did))) = false;
 #endif
     struct target_pt_regs regs1, *regs = &regs1;
     struct image_info info1, *info = &info1;
@@ -978,6 +986,7 @@ int main(int argc, char **argv, char **envp)
 
 #ifdef CONFIG_JOVE
     jv_cpu = cpu;
+    __jove_did = true; /* we got here */
 #else
     cpu_loop(env);
 #endif
