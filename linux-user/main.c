@@ -672,7 +672,7 @@ static int parse_args(int argc, char **argv)
 }
 
 #ifdef CONFIG_JOVE
-CPUState *jv_cpu;
+CPUState *jv_cpu = NULL;
 
 int jv_init_libqemu(const char *_binpath)
 #else
