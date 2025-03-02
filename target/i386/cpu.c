@@ -45,6 +45,12 @@
 #include "disas/capstone.h"
 #include "cpu-internal.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+void jove_env(CPUX86State *env) {
+  env->regs[R_ESP];
+}
+#endif
+
 static void x86_cpu_realizefn(DeviceState *dev, Error **errp);
 
 /* Helpers for building CPUID[2] descriptors: */
