@@ -881,7 +881,7 @@ void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
 
 #endif
 
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && defined(__aarch64__)
 
 uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 {
