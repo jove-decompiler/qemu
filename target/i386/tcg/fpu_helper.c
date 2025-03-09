@@ -1240,7 +1240,7 @@ void helper_fptan(CPUX86State *env)
     }
 
 #ifdef CONFIG_JOVE_HELPERS
-#include "jove_help_tan.h"
+#include "jove_help_tan.c.inc"
 #endif
 }
 
@@ -2332,7 +2332,7 @@ void helper_fsin(CPUX86State *env)
     }
 
 #ifdef CONFIG_JOVE_HELPERS
-#include "jove_help_sin.h"
+#include "jove_help_sin.c.inc"
 #endif
 }
 
@@ -2358,7 +2358,7 @@ void helper_fcos(CPUX86State *env)
     }
 
 #ifdef CONFIG_JOVE_HELPERS
-#include "jove_help_cos.h"
+#include "jove_help_cos.c.inc"
 #endif
 }
 
