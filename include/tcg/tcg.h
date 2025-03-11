@@ -811,6 +811,15 @@ static inline void *tcg_malloc(int size)
 void tcg_init(size_t tb_size, int splitwx, unsigned max_cpus);
 void tcg_register_thread(void);
 void tcg_prologue_init(TCGContext *s);
+#ifdef CONFIG_JOVE_HELPERS
+void _jove_do_print_tcg_constants(TCGContext *s,
+                                  const char **callconv_args,
+                                  const char **callconv_rets,
+                                  const char **not_args,
+                                  const char **not_rets,
+                                  const char **pinned,
+                                  const char **strarr);
+#endif
 void tcg_func_start(TCGContext *s);
 
 int tcg_gen_code(TCGContext *s, TranslationBlock *tb, uint64_t pc_start);

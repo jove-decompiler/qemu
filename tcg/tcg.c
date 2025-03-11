@@ -1485,6 +1485,214 @@ void tcg_prologue_init(TCGContext *s)
     tcg_region_prologue_set(s);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+#define JOVE_ENOUGH_ULONGS 8
+
+typedef struct jove_glbs_t {
+  unsigned long arr[JOVE_ENOUGH_ULONGS];
+} jove_glbs_t;
+
+static bool _jove_is_glbs_empty(const jove_glbs_t *glbs) {
+  for (unsigned i = 0; i < JOVE_ENOUGH_ULONGS; ++i) {
+    if (glbs->arr[i])
+      return false;
+  }
+
+  return true;
+}
+
+#define JOVE_GLBS_INIT ((jove_glbs_t){0})
+
+static int _jove_index_of_glb(const char *nm) {
+  assert(nm);
+
+  for (int i = 0; i < tcg_ctx->nb_globals; i++) {
+    const char *name = tcg_ctx->temps[i].name;
+    if (!name)
+      continue;
+
+    if (strcmp(name, nm) == 0)
+      return i;
+  }
+
+  return -1;
+}
+
+static void _jove_print_lookup_by_mem_offset(TCGContext *s) {
+  int max_off = -1;
+
+  for (int i = 0; i < s->nb_globals; i++) {
+    int off = s->temps[i].mem_offset;
+    max_off = MAX(max_off, off);
+  }
+
+  assert(max_off > 0);
+
+  printf("static const uint8_t tcg_global_by_offset_lookup_table[%u] = {\n"
+         "[0 ... %u] = 0xff,\n",
+         max_off + 1, max_off);
+
+  for (int i = 0; i < s->nb_globals; i++) {
+    TCGTemp *ts = &s->temps[i];
+
+    if (!ts->mem_base ||
+        (ts->mem_base->name && strcmp(ts->mem_base->name, "env") != 0))
+      continue;
+
+    // global index must fit in a uint8_t
+    assert(i < 0xff);
+
+    printf("[%u] = %d,\n", (unsigned)ts->mem_offset, i);
+  }
+
+  printf("};\n");
+}
+
+static void _jove_print_global_set(TCGContext *s,
+                                   const char *name,
+                                   const jove_glbs_t *in) {
+  unsigned long i;
+  unsigned long last = find_last_bit(&in->arr[0],
+                                     8 * JOVE_ENOUGH_ULONGS * sizeof(unsigned long));
+
+  printf("const tcg_global_set_t %s(", name);
+  if (_jove_is_glbs_empty(in)) {
+    putchar('0');
+  } else {
+    putchar('\"');
+    for (i = 0; i < last; ++i)
+      putchar(test_bit(i, &in->arr[0]) ? '1' : '0');
+    putchar('\"');
+  }
+  printf(");\n");
+}
+
+static void _jove_print_globals_as_array(TCGContext *s,
+                                         const char **glbarr) {
+  const char **glbp;
+
+  for (glbp = glbarr; *glbp; ++glbp) {
+    int idx = _jove_index_of_glb(*glbp);
+    if (idx < 0)
+      continue;
+
+    if (glbp != glbarr)
+      putchar(',');
+
+    printf("%uu", idx);
+  }
+}
+
+static unsigned _jove_load_global_set(TCGContext *s,
+                                      jove_glbs_t *out,
+                                      const char **glbarr) {
+  unsigned res = 0;
+  const char **glbp;
+
+  for (glbp = glbarr; *glbp; ++glbp) {
+    int idx = _jove_index_of_glb(*glbp);
+    if (idx < 0)
+      continue;
+
+    ++res;
+    set_bit(idx, &out->arr[0]);
+  }
+
+  return res;
+}
+
+void _jove_do_print_tcg_constants(TCGContext *s,
+                                  const char **callconv_args,
+                                  const char **callconv_rets,
+                                  const char **not_args,
+                                  const char **not_rets,
+                                  const char **pinned,
+                                  const char **strarr) {
+  unsigned target_num_reg_args = 0;
+
+  printf("#pragma once\n"
+         "#ifdef __cplusplus\n"
+         "#include <bitset>\n"
+         "#include <array>\n"
+         "#include <cstdint>\n"
+         "\n"
+         "namespace jove {\n"
+         "\n");
+
+  printf("typedef uint%u_t taddr_t;\n",
+         s->addr_type == TCG_TYPE_I32 ? 32u :
+        (s->addr_type == TCG_TYPE_I64 ? 64u : 0u));
+
+  printf("constexpr unsigned tcg_num_globals(%uu);\n", (unsigned)s->nb_globals);
+  printf("typedef std::bitset<tcg_num_globals> tcg_global_set_t;\n");
+  printf("constexpr unsigned tcg_max_temps(%uu);\n", (unsigned)TCG_MAX_TEMPS);
+
+  printf("constexpr int tcg_env_index(%d);\n", _jove_index_of_glb("env"));
+
+  {
+    jove_glbs_t args = JOVE_GLBS_INIT;
+
+    target_num_reg_args = _jove_load_global_set(s, &args, callconv_args);
+    _jove_print_global_set(s, "CallConvArgs", &args);
+
+    printf("typedef std::array<unsigned, %u> CallConvArgArrayTy;\n",
+           target_num_reg_args);
+
+    printf("static const CallConvArgArrayTy CallConvArgArray{");
+    _jove_print_globals_as_array(s, callconv_args);
+    printf("};\n");
+  }
+
+  {
+    jove_glbs_t rets = JOVE_GLBS_INIT;
+
+    unsigned target_num_reg_rets = _jove_load_global_set(s, &rets, callconv_rets);
+    _jove_print_global_set(s, "CallConvRets", &rets);
+
+    printf("typedef std::array<unsigned, %u> CallConvRetArrayTy;\n",
+           target_num_reg_rets);
+
+    printf("static const CallConvRetArrayTy CallConvRetArray{");
+    _jove_print_globals_as_array(s, callconv_rets);
+    printf("};\n");
+  }
+
+  {
+    jove_glbs_t not = JOVE_GLBS_INIT;
+
+    _jove_load_global_set(s, &not, not_args);
+    _jove_print_global_set(s, "NotArgs", &not);
+  }
+
+  {
+    jove_glbs_t not = JOVE_GLBS_INIT;
+
+    _jove_load_global_set(s, &not, not_rets);
+    _jove_print_global_set(s, "NotRets", &not);
+  }
+
+  {
+    jove_glbs_t pin = JOVE_GLBS_INIT;
+
+    _jove_load_global_set(s, &pin, pinned);
+    _jove_print_global_set(s, "InitPinnedEnvGlbs", &pin);
+  }
+
+  _jove_print_lookup_by_mem_offset(s);
+
+  for (const char **p = strarr; p[0] && p[1]; p += 2) {
+    printf("constexpr int tcg_%s_index(%d);\n", p[0], _jove_index_of_glb(p[1]));
+  }
+
+  printf("\n"
+         "}\n"
+         "\n"
+         "#endif /* __cplusplus */\n"
+         "\n"
+         "#define TARGET_NUM_REG_ARGS %u\n", target_num_reg_args);
+}
+#endif
+
 void tcg_func_start(TCGContext *s)
 {
     tcg_pool_reset(s);
