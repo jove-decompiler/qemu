@@ -1487,7 +1487,7 @@ void tcg_prologue_init(TCGContext *s)
 
 #ifdef CONFIG_JOVE_HELPERS
 #define JOVE_ENOUGH_BITS (9 * sizeof(unsigned long) * BITS_PER_BYTE)
-#define JOVE_ENOUGH_ULONGS (JOVE_ENOUGH_BITS / BITS_PER_BYTE)
+#define JOVE_ENOUGH_ULONGS (JOVE_ENOUGH_BITS / (sizeof(unsigned long) * BITS_PER_BYTE))
 
 typedef struct jove_glbs_t {
   unsigned long arr[JOVE_ENOUGH_ULONGS];
