@@ -1486,11 +1486,14 @@ void tcg_prologue_init(TCGContext *s)
 }
 
 #ifdef CONFIG_JOVE_HELPERS
-#define JOVE_ENOUGH_ULONGS 8
+#define JOVE_ENOUGH_BITS (9 * sizeof(unsigned long) * BITS_PER_BYTE)
+#define JOVE_ENOUGH_ULONGS (JOVE_ENOUGH_BITS / BITS_PER_BYTE)
 
 typedef struct jove_glbs_t {
   unsigned long arr[JOVE_ENOUGH_ULONGS];
 } jove_glbs_t;
+
+#define JOVE_GLBS_INIT ((jove_glbs_t){.arr = {0}})
 
 static bool _jove_is_glbs_empty(const jove_glbs_t *glbs) {
   for (unsigned i = 0; i < JOVE_ENOUGH_ULONGS; ++i) {
@@ -1500,8 +1503,6 @@ static bool _jove_is_glbs_empty(const jove_glbs_t *glbs) {
 
   return true;
 }
-
-#define JOVE_GLBS_INIT ((jove_glbs_t){0})
 
 static int _jove_index_of_glb(const char *nm) {
   assert(nm);
@@ -1551,16 +1552,17 @@ static void _jove_print_lookup_by_mem_offset(TCGContext *s) {
 static void _jove_print_global_set(TCGContext *s,
                                    const char *name,
                                    const jove_glbs_t *in) {
-  unsigned long i;
-  unsigned long last = find_last_bit(&in->arr[0],
-                                     8 * JOVE_ENOUGH_ULONGS * sizeof(unsigned long));
+  int i;
 
-  printf("const tcg_global_set_t %s(", name);
-  if (_jove_is_glbs_empty(in)) {
+  assert(JOVE_ENOUGH_BITS >= s->nb_globals);
+
+  printf("static const tcg_global_set_t %s(", name);
+  if (find_last_bit(&in->arr[0], JOVE_ENOUGH_BITS) == JOVE_ENOUGH_BITS) {
+    assert(_jove_is_glbs_empty(in));
     putchar('0');
   } else {
     putchar('\"');
-    for (i = 0; i < last; ++i)
+    for (i = s->nb_globals - 1; i >= 0; --i)
       putchar(test_bit(i, &in->arr[0]) ? '1' : '0');
     putchar('\"');
   }
@@ -1602,6 +1604,7 @@ static unsigned _jove_load_global_set(TCGContext *s,
 }
 
 void _jove_do_print_tcg_constants(TCGContext *s,
+                                  unsigned taddr_bits,
                                   const char **callconv_args,
                                   const char **callconv_rets,
                                   const char **not_args,
@@ -1609,6 +1612,9 @@ void _jove_do_print_tcg_constants(TCGContext *s,
                                   const char **pinned,
                                   const char **strarr) {
   unsigned target_num_reg_args = 0;
+  int env_idx = _jove_index_of_glb("env");
+
+  assert(env_idx >= 0);
 
   printf("#pragma once\n"
          "#ifdef __cplusplus\n"
@@ -1619,15 +1625,14 @@ void _jove_do_print_tcg_constants(TCGContext *s,
          "namespace jove {\n"
          "\n");
 
-  printf("typedef uint%u_t taddr_t;\n",
-         s->addr_type == TCG_TYPE_I32 ? 32u :
-        (s->addr_type == TCG_TYPE_I64 ? 64u : 0u));
+  printf("typedef uint%u_t taddr_t;\n", taddr_bits);
+
+  printf("constexpr int tcg_env_index(%d);\n", env_idx);
 
   printf("constexpr unsigned tcg_num_globals(%uu);\n", (unsigned)s->nb_globals);
   printf("typedef std::bitset<tcg_num_globals> tcg_global_set_t;\n");
   printf("constexpr unsigned tcg_max_temps(%uu);\n", (unsigned)TCG_MAX_TEMPS);
 
-  printf("constexpr int tcg_env_index(%d);\n", _jove_index_of_glb("env"));
 
   {
     jove_glbs_t args = JOVE_GLBS_INIT;
