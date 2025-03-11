@@ -1321,6 +1321,7 @@ void _jove_print_tcg_constants(TCGContext *s) {
   };
 
   _jove_do_print_tcg_constants(s,
+                               TARGET_LONG_BITS,
                                &callconv_args[0],
                                &callconv_rets[0],
                                &not_arg_regs[0],

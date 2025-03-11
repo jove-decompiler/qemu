@@ -813,6 +813,7 @@ void tcg_register_thread(void);
 void tcg_prologue_init(TCGContext *s);
 #ifdef CONFIG_JOVE_HELPERS
 void _jove_do_print_tcg_constants(TCGContext *s,
+                                  unsigned taddr_bits,
                                   const char **callconv_args,
                                   const char **callconv_rets,
                                   const char **not_args,
