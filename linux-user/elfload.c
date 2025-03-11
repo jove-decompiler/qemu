@@ -2788,12 +2788,17 @@ static void pgb_reserved_va(const char *image_name, abi_ulong guest_loaddr,
     /* Widen the "image" to the entire reserved address space. */
     pgb_static(image_name, 0, reserved_va, align);
 
+#ifndef CONFIG_JOVE_HELPERS
     /* osdep.h defines this as 0 if it's missing */
     flags |= MAP_FIXED_NOREPLACE;
 
     /* Reserve the memory on the host. */
     assert(guest_base != 0);
     test = g2h_untagged(0);
+#else
+    test = 0;
+    test = /* FIXME? */
+#endif
     addr = mmap(test, reserved_va + 1, PROT_NONE, flags, -1, 0);
     if (addr == MAP_FAILED || addr != test) {
         error_report("Unable to reserve 0x%lx bytes of virtual address "

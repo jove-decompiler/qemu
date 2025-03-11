@@ -671,6 +671,11 @@ static int parse_args(int argc, char **argv)
     return optind;
 }
 
+
+#ifdef CONFIG_JOVE_HELPERS
+static void _jove_print_tcg_constants(TCGContext *);
+#endif
+
 #ifdef CONFIG_JOVE
 CPUState *jv_cpu = NULL;
 
@@ -969,6 +974,11 @@ int main(int argc, char **argv, char **envp)
        the real value of GUEST_BASE into account.  */
     tcg_prologue_init(tcg_ctx);
 
+#ifdef CONFIG_JOVE_HELPERS
+    _jove_print_tcg_constants(tcg_ctx);
+    exit(0);
+#endif
+
     target_cpu_copy_regs(env, regs);
 
     if (gdbstub) {
@@ -993,3 +1003,330 @@ int main(int argc, char **argv, char **envp)
     /* never exits */
     return 0;
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void _jove_print_tcg_constants(TCGContext *s) {
+  static const char *strarr[][2] = {
+#if defined(TARGET_X86_64)
+      {"program_counter", "rip"},
+      {"frame_pointer", "rbp"},
+      {"stack_pointer", "rsp"},
+      {"fs_base", "fs_base"},
+      {"gs_base", "gs_base"},
+      {"rax", "rax"},
+#elif defined(TARGET_I386)
+      {"program_counter", "eip"},
+      {"frame_pointer", "ebp"},
+      {"stack_pointer", "esp"},
+      {"fs_base", "fs_base"},
+      {"gs_base", "gs_base"},
+#elif defined(TARGET_MIPS64)
+      {"program_counter", "PC"},
+      {"frame_pointer", "s8"},
+      {"stack_pointer", "sp"},
+      {"t9", "t9"},
+      {"ra", "ra"},
+      {"lladdr", "lladdr"},
+      {"llval", "llval"},
+#elif defined(TARGET_MIPS)
+      {"program_counter", "PC"},
+      {"frame_pointer", "s8"},
+      {"stack_pointer", "sp"},
+      {"t9", "t9"},
+      {"ra", "ra"},
+      {"btarget", "btarget"},
+      {"lladdr", "lladdr"},
+      {"llval", "llval"},
+#elif defined(TARGET_AARCH64)
+      {"program_counter", "PC"}, /* made uppercase to distinguish */
+      {"frame_pointer", "x29"},
+      {"stack_pointer", "sp"},
+#else
+#error
+#endif
+      {NULL, NULL}};
+
+  static const char *callconv_args[] = {
+#if defined(TARGET_X86_64)
+      "rdi", "rsi", "rdx", "rcx", "r8", "r9",
+#elif defined(TARGET_I386)
+      "eax", "edx", "ecx",
+#elif defined(TARGET_MIPS64)
+      "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3",
+#elif defined(TARGET_MIPS)
+      "a0", "a1", "a2", "a3",
+#elif defined(TARGET_AARCH64)
+      "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
+#else
+#error
+#endif
+      NULL};
+
+  static const char *callconv_rets[] = {
+#if defined(TARGET_X86_64)
+      "rax", "rdx",
+#elif defined(TARGET_I386)
+      "eax", "edx",
+#elif defined(TARGET_MIPS64) || defined(TARGET_MIPS)
+      "v0", "v1",
+#elif defined(TARGET_AARCH64)
+      "x0", "x1",
+#else
+#error
+#endif
+      NULL};
+
+#if defined(TARGET_X86_64)
+  static const char *not_arg_or_ret_regs[] = {
+    "_frame",
+    "env",
+    "es_base",
+    "cs_base",
+    "ss_base",
+    "ds_base",
+    "fs_base",
+    "gs_base",
+    "bnd0_lb",
+    "bnd0_ub",
+    "bnd1_lb",
+    "bnd1_ub",
+    "bnd2_lb",
+    "bnd2_ub",
+    "bnd3_lb",
+    "bnd3_ub",
+    "cc_op",
+    "cc_dst",
+    "cc_src",
+    "cc_src2",
+    "rip",
+    NULL
+  };
+  const char **not_ret_regs = &not_arg_or_ret_regs[0];
+  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+#elif defined(TARGET_I386)
+  static const char *not_arg_or_ret_regs[] = {
+    "_frame",
+    "env",
+    "es_base",
+    "cs_base",
+    "ss_base",
+    "ds_base",
+    "fs_base",
+    "gs_base",
+    "bnd0_lb_0",
+    "bnd0_lb_1",
+    "bnd0_ub_0",
+    "bnd0_ub_1",
+    "bnd1_lb_0",
+    "bnd1_lb_1",
+    "bnd1_ub_0",
+    "bnd1_ub_1",
+    "bnd2_lb_0",
+    "bnd2_lb_1",
+    "bnd2_ub_0",
+    "bnd2_ub_1",
+    "bnd3_lb_0",
+    "bnd3_lb_1",
+    "bnd3_ub_0",
+    "bnd3_ub_1",
+    "cc_op",
+    "cc_dst",
+    "cc_src",
+    "cc_src2",
+    "bnd0_lb",
+    "bnd0_ub",
+    "bnd1_lb",
+    "bnd1_ub",
+    "bnd2_lb",
+    "bnd2_ub",
+    "bnd3_lb",
+    "bnd3_ub",
+    "eip",
+    NULL
+  };
+  const char **not_ret_regs = &not_arg_or_ret_regs[0];
+  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+#elif defined(TARGET_MIPS64)
+  static const char *not_arg_or_ret_regs[] = {
+    "_frame",
+    "env",
+    "PC",
+    NULL
+  };
+
+  const char **not_ret_regs = &not_arg_or_ret_regs[0];
+  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+#elif defined(TARGET_MIPS)
+  static const char *not_arg_regs[] = {
+    "_frame",
+    "env",
+    "PC",
+    "btarget",
+    "bcond",
+    NULL
+  };
+  static const char *not_ret_regs[] = {
+    "_frame",
+    "env",
+    "PC",
+    "ra",
+    "gp",
+    "btarget",
+    "bcond",
+    NULL
+  };
+#elif defined(TARGET_AARCH64)
+  static const char *not_arg_regs[] = {
+    "env",
+    "pc",
+    "PC",
+    NULL
+  };
+  static const char *not_ret_regs[] = {
+    "env",
+    "pc",
+    "PC",
+    "lr",
+    "CF",
+    "NF",
+    "VF",
+    "ZF",
+    "exclusive_addr",
+    "exclusive_val",
+    "exclusive_high",
+    NULL
+  };
+#else
+#error
+#endif
+
+  static const char *pinned[] = {
+#if defined(TARGET_MIPS64)
+    "f0",
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10",
+    "f11",
+    "f12",
+    "f13",
+    "f14",
+    "f15",
+    "f16",
+    "f17",
+    "f18",
+    "f19",
+    "f20",
+    "f21",
+    "f22",
+    "f23",
+    "f24",
+    "f25",
+    "f26",
+    "f27",
+    "f28",
+    "f29",
+    "f30",
+    "f31",
+    "w0.d1",
+    "w1.d1",
+    "w2.d1",
+    "w3.d1",
+    "w4.d1",
+    "w5.d1",
+    "w6.d1",
+    "w7.d1",
+    "w8.d1",
+    "w9.d1",
+    "hflags",
+    "fcr0",
+    "fcr31",
+#elif defined(TARGET_MIPS)
+    "f0",
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10",
+    "f11",
+    "f12",
+    "f13",
+    "f14",
+    "f15",
+    "f16",
+    "f17",
+    "f18",
+    "f19",
+    "f20",
+    "f21",
+    "f22",
+    "f23",
+    "f24",
+    "f25",
+    "f26",
+    "f27",
+    "f28",
+    "f29",
+    "f30",
+    "f31",
+    "w0.d1",
+    "w1.d1",
+    "w2.d1",
+    "w3.d1",
+    "w4.d1",
+    "w5.d1",
+    "w6.d1",
+    "w7.d1",
+    "w8.d1",
+    "w9.d1",
+    "w10.d1",
+    "w11.d1",
+    "w12.d1",
+    "w13.d1",
+    "w14.d1",
+    "w15.d1",
+    "w16.d1",
+    "w17.d1",
+    "w18.d1",
+    "w19.d1",
+    "w20.d1",
+    "w21.d1",
+    "w22.d1",
+    "w23.d1",
+    "w24.d1",
+    "w25.d1",
+    "w26.d1",
+    "w27.d1",
+    "w28.d1",
+    "w29.d1",
+    "w30.d1",
+    "hflags",
+    "fcr0",
+    "fcr31",
+#else
+#endif
+    NULL
+  };
+
+  _jove_do_print_tcg_constants(s,
+                               &callconv_args[0],
+                               &callconv_rets[0],
+                               &not_arg_regs[0],
+                               &not_ret_regs[0],
+                               &pinned[0],
+                               &strarr[0][0]);
+}
+
+#endif
