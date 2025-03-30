@@ -666,6 +666,10 @@ void signal_init(const char *rtsig_map)
     act.sa_flags = SA_SIGINFO;
     act.sa_sigaction = host_signal_handler;
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define sigaction(...) ({do {} while(0); 0;})
+#endif
+
     /*
      * A parent process may configure ignored signals, but all other
      * signals are default.  For any target signals that have no host
@@ -698,6 +702,10 @@ void signal_init(const char *rtsig_map)
     }
 
     sigaction(host_interrupt_signal, &act, NULL);
+
+#if !defined(CONFIG_JOVE) && !defined(CONFIG_JOVE_HELPERS)
+#undef sigaction
+#endif
 }
 
 /* Force a synchronously taken signal. The kernel force_sig() function

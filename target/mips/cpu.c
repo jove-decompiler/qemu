@@ -36,6 +36,12 @@
 #include "semihosting/semihost.h"
 #endif
 
+#if defined(CONFIG_JOVE_HELPERS)
+void jove_env(CPUMIPSState *env) {
+  env->active_tc.gpr[0];
+}
+#endif
+
 const char regnames[32][3] = {
     "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3",
     "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",

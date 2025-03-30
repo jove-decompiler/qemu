@@ -309,6 +309,15 @@ static void write_jr_code_load(const void *start, uint16_t host_size,
     fwrite(start, host_size, 1, jitdump);
 }
 
+#ifdef CONFIG_JOVE
+
+void perf_report_code(uint64_t guest_pc, TranslationBlock *tb,
+                      const void *start)
+{
+}
+
+#else
+
 void perf_report_code(uint64_t guest_pc, TranslationBlock *tb,
                       const void *start)
 {
@@ -361,6 +370,8 @@ void perf_report_code(uint64_t guest_pc, TranslationBlock *tb,
     debuginfo_unlock();
     g_free(q);
 }
+
+#endif
 
 void perf_exit(void)
 {

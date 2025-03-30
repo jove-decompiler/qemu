@@ -29,8 +29,20 @@ void mips_restore_state_to_opc(CPUState *cs,
 
 const char *mips_exception_name(int32_t exception);
 
+#ifdef CONFIG_JOVE_HELPERS
+
+G_NORETURN static inline void do_raise_exception_err(CPUMIPSState *env, uint32_t exception,
+                                       int error_code, uintptr_t pc) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+
+#else
+
 G_NORETURN void do_raise_exception_err(CPUMIPSState *env, uint32_t exception,
                                        int error_code, uintptr_t pc);
+
+#endif
 
 static inline G_NORETURN
 void do_raise_exception(CPUMIPSState *env,

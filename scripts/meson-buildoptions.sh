@@ -51,6 +51,8 @@ meson_options_help() {
   printf "%s\n" '                           Enable stricter set of Rust warnings'
   printf "%s\n" '  --enable-strip           Strip targets on install'
   printf "%s\n" '  --enable-tcg-interpreter TCG with bytecode interpreter (slow)'
+  printf "%s\n" '  --enable-jove            build for jove'
+  printf "%s\n" '  --enable-jove-helpers    build for jove (helpers)'
   printf "%s\n" '  --enable-trace-backends=CHOICES'
   printf "%s\n" '                           Set available tracing backends [log] (choices:'
   printf "%s\n" '                           dtrace/ftrace/log/nop/simple/syslog/ust)'
@@ -352,6 +354,10 @@ _meson_option_parse() {
     --interp-prefix=*) quote_sh "-Dinterp_prefix=$2" ;;
     --enable-jack) printf "%s" -Djack=enabled ;;
     --disable-jack) printf "%s" -Djack=disabled ;;
+    --enable-jove) printf "%s" -Djove=true ;;
+    --disable-jove) printf "%s" -Djove=false ;;
+    --enable-jove-helpers) printf "%s" -Djove_helpers=true ;;
+    --disable-jove-helpers) printf "%s" -Djove_helpers=false ;;
     --enable-keyring) printf "%s" -Dkeyring=enabled ;;
     --disable-keyring) printf "%s" -Dkeyring=disabled ;;
     --enable-kvm) printf "%s" -Dkvm=enabled ;;

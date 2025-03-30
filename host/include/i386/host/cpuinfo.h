@@ -28,8 +28,16 @@
 #define CPUINFO_AES             (1u << 18)
 #define CPUINFO_PCLMUL          (1u << 19)
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static unsigned cpuinfo = 0;
+
+#else
+
 /* Initialized with a constructor. */
 extern unsigned cpuinfo;
+
+#endif
 
 /*
  * We cannot rely on constructor ordering, so other constructors must

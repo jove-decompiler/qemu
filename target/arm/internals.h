@@ -980,10 +980,25 @@ ARMMMUIdx arm_v7m_mmu_idx_for_secstate(CPUARMState *env, bool secstate);
  */
 bool arm_s1_regime_using_lpae_format(CPUARMState *env, ARMMMUIdx mmu_idx);
 
+
+#ifdef CONFIG_JOVE_HELPERS
+
+G_NORETURN static inline void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
+                                                          MMUAccessType access_type,
+                                                          int mmu_idx, uintptr_t retaddr)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 /* Raise a data fault alignment exception for the specified virtual address */
 G_NORETURN void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
                                             MMUAccessType access_type,
                                             int mmu_idx, uintptr_t retaddr);
+
+#endif
 
 #ifndef CONFIG_USER_ONLY
 /* arm_cpu_do_transaction_failed: handle a memory system error response

@@ -262,6 +262,8 @@ void arm_deliver_fault(ARMCPU *cpu, vaddr addr,
     raise_exception(env, exc, syn, target_el);
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 /* Raise a data fault alignment exception for the specified virtual address */
 void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
                                  MMUAccessType access_type,
@@ -276,6 +278,8 @@ void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
     fi.type = ARMFault_Alignment;
     arm_deliver_fault(cpu, vaddr, access_type, mmu_idx, &fi);
 }
+
+#endif
 
 void helper_exception_pc_alignment(CPUARMState *env, vaddr pc)
 {

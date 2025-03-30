@@ -23,7 +23,9 @@
 #include "qemu/plugin.h"
 #include "internal-common.h"
 
+#ifndef CONFIG_JOVE_HELPERS
 bool tcg_allowed;
+#endif
 
 bool tcg_cflags_has(CPUState *cpu, uint32_t flags)
 {
@@ -57,6 +59,8 @@ uint32_t curr_cflags(CPUState *cpu)
     return cflags;
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 /* exit the current TB, but without causing any exception to be raised */
 void cpu_loop_exit_noexc(CPUState *cpu)
 {
@@ -88,3 +92,5 @@ void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc)
     cpu->exception_index = EXCP_ATOMIC;
     cpu_loop_exit_restore(cpu, pc);
 }
+
+#endif
