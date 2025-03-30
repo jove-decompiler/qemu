@@ -4,7 +4,7 @@
  * This one expands prototypes for the helper functions.
  */
 
-#ifndef HELPER_PROTO_H
+#if !defined(HELPER_PROTO_H) || defined(HELPER_PROTO_H_INC_FOR_JOVE)
 #define HELPER_PROTO_H
 
 #include "exec/helper-proto-common.h"

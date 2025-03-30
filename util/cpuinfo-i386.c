@@ -9,7 +9,11 @@
 # include "qemu/cpuid.h"
 #endif
 
+#ifndef CONFIG_JOVE_HELPERS
+
 unsigned cpuinfo;
+
+#endif
 
 /* Called both as constructor and (possibly) via other constructors. */
 unsigned __attribute__((constructor)) cpuinfo_init(void)

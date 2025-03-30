@@ -218,11 +218,21 @@ static inline bool cpu_loop_exit_requested(CPUState *cpu)
     return (int32_t)qatomic_read(&cpu->neg.icount_decr.u32) < 0;
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+G_NORETURN static inline void cpu_loop_exit_noexc(CPUState *cpu)                { __builtin_trap(); __builtin_unreachable(); }
+G_NORETURN static inline void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc) { __builtin_trap(); __builtin_unreachable(); }
+#else
 G_NORETURN void cpu_loop_exit_noexc(CPUState *cpu);
 G_NORETURN void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc);
+#endif /* CONFIG_JOVE_HELPERS */
 #endif /* CONFIG_TCG */
+#ifdef CONFIG_JOVE_HELPERS
+G_NORETURN static inline void cpu_loop_exit(CPUState *cpu)                       { __builtin_trap(); __builtin_unreachable(); }
+G_NORETURN static inline void cpu_loop_exit_restore(CPUState *cpu, uintptr_t pc) { __builtin_trap(); __builtin_unreachable(); }
+#else
 G_NORETURN void cpu_loop_exit(CPUState *cpu);
 G_NORETURN void cpu_loop_exit_restore(CPUState *cpu, uintptr_t pc);
+#endif /* CONFIG_JOVE_HELPERS */
 
 /* accel/tcg/cpu-exec.c */
 int cpu_exec(CPUState *cpu);

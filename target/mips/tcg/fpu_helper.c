@@ -27,6 +27,10 @@
 #include "fpu/softfloat.h"
 #include "fpu_helper.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+#define helper_raise_exception(x, y) do_raise_exception(x, y, GETPC())
+#endif
+
 
 /* Complex FPU operations which may need stack space. */
 

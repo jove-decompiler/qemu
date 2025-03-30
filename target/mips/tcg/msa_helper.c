@@ -8295,6 +8295,15 @@ void helper_msa_ld_d(CPUMIPSState *env, uint32_t wd,
 #define MSA_PAGESPAN(x) \
         ((((x) & ~TARGET_PAGE_MASK) + MSA_WRLEN / 8 - 1) >= TARGET_PAGE_SIZE)
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static inline void ensure_writable_pages(CPUMIPSState *env,
+                                         target_ulong addr,
+                                         int mmu_idx,
+                                         uintptr_t retaddr) {}
+
+#else
+
 static inline void ensure_writable_pages(CPUMIPSState *env,
                                          target_ulong addr,
                                          int mmu_idx,
@@ -8309,6 +8318,8 @@ static inline void ensure_writable_pages(CPUMIPSState *env,
         probe_write(env, addr, 0, mmu_idx, retaddr);
     }
 }
+
+#endif
 
 void helper_msa_st_b(CPUMIPSState *env, uint32_t wd,
                      target_ulong addr)

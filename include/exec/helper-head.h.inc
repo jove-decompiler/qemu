@@ -8,7 +8,13 @@
 
 #include "fpu/softfloat-types.h"
 
+#ifndef HELPER_PROTO_H_INC_FOR_JOVE
 #define HELPER(name) glue(helper_, name)
+#else
+#ifndef HELPER
+#error
+#endif
+#endif
 
 /* Some types that make sense in C, but not for TCG.  */
 #define dh_alias_i32 i32

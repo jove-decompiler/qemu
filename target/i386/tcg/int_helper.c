@@ -441,6 +441,30 @@ void helper_cr4_testbit(CPUX86State *env, uint32_t bit)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+target_ulong HELPER(rdrand)(CPUX86State *env)
+{
+    uint64_t res;
+    uint8_t valid = 0;
+
+    asm volatile("rdrand     %0\n\t"
+                 "setc       %1\n"
+                 : "=r"(res), "=qm"(valid));
+
+    if (!valid) {
+        /* Failure clears CF and all other flags, and returns 0.  */
+        env->cc_src = 0;
+        return 0;
+    }
+
+    /* Success sets CF and clears all others.  */
+    env->cc_src = CC_C;
+    return res;
+}
+
+#else
+
 target_ulong HELPER(rdrand)(CPUX86State *env)
 {
     Error *err = NULL;
@@ -460,3 +484,5 @@ target_ulong HELPER(rdrand)(CPUX86State *env)
     env->cc_op = CC_OP_EFLAGS;
     return ret;
 }
+
+#endif

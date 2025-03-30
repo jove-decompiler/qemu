@@ -879,7 +879,9 @@ void signal_init(void)
          * behavior.  But do trap all default-fatal signals.
          */
         if (fatal_signal(i)) {
+#ifndef CONFIG_JOVE
             sigaction(host_sig, &act, NULL);
+#endif
         }
     }
     sigaction(host_interrupt_signal, &act, NULL);
