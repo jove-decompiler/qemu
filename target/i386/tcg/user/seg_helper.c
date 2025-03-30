@@ -26,6 +26,22 @@
 #include "tcg/helper-tcg.h"
 #include "tcg/seg_helper.h"
 
+#if defined(TARGET_X86_64) && defined(CONFIG_JOVE_HELPERS)
+
+void helper_syscall(CPUX86State *env, int next_eip_addend)
+{
+  (void)env->regs[R_EDI];
+  (void)env->regs[R_ESI];
+  (void)env->regs[R_EDX];
+  (void)env->regs[R_R10];
+  (void)env->regs[R_R8];
+  (void)env->regs[R_R9];
+
+#include "jove_do_syscall.h"
+}
+
+#else
+
 void helper_syscall(CPUX86State *env, int next_eip_addend)
 {
     CPUState *cs = env_cpu(env);
@@ -35,6 +51,8 @@ void helper_syscall(CPUX86State *env, int next_eip_addend)
     env->exception_next_eip = env->eip + next_eip_addend;
     cpu_loop_exit(cs);
 }
+
+#endif
 
 /*
  * fake user mode interrupt. is_int is TRUE if coming from the int

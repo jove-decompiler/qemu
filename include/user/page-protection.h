@@ -19,7 +19,11 @@
 void page_protect(tb_page_addr_t page_addr);
 int page_unprotect(tb_page_addr_t address, uintptr_t pc);
 
+#ifdef CONFIG_JOVE_HELPERS
+static inline int page_get_flags(target_ulong address) { return 0; }
+#else
 int page_get_flags(target_ulong address);
+#endif
 
 /**
  * page_set_flags:

@@ -345,6 +345,10 @@ void *tlb_vaddr_to_host(CPUArchState *env, vaddr addr,
 #ifdef CONFIG_USER_ONLY
 extern __thread uintptr_t helper_retaddr;
 
+#ifdef CONFIG_JOVE_HELPERS
+static inline void set_helper_retaddr(uintptr_t ra) {}
+static inline void clear_helper_retaddr(void) {}
+#else
 static inline void set_helper_retaddr(uintptr_t ra)
 {
     helper_retaddr = ra;
@@ -364,6 +368,7 @@ static inline void clear_helper_retaddr(void)
     signal_barrier();
     helper_retaddr = 0;
 }
+#endif /* CONFIG_JOVE_HELPERS */
 #else
 #define set_helper_retaddr(ra)   do { } while (0)
 #define clear_helper_retaddr()   do { } while (0)

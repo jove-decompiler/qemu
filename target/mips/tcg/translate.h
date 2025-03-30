@@ -14,7 +14,7 @@
 #include "exec/helper-gen.h"
 #include "qemu/log.h"
 
-#define MIPS_DEBUG_DISAS 0
+#define MIPS_DEBUG_DISAS 1
 
 typedef struct DisasContext {
     DisasContextBase base;
@@ -201,7 +201,7 @@ extern TCGv bcond;
 #define MIPS_INVAL(op)                                                        \
     do {                                                                      \
         if (MIPS_DEBUG_DISAS) {                                               \
-            qemu_log_mask(CPU_LOG_TB_IN_ASM,                                  \
+            printf(/* qemu_log_mask(CPU_LOG_TB_IN_ASM, */                     \
                           "%016" VADDR_PRIx                                   \
                           ": %08x Invalid %s %03x %03x %03x\n",               \
                           ctx->base.pc_next, ctx->opcode, op,                 \

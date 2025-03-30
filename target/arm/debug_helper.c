@@ -508,6 +508,16 @@ void arm_debug_excp_handler(CPUState *cs)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(exception_bkpt_insn)(CPUARMState *env, uint32_t syndrome)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 /*
  * Raise an EXCP_BKPT with the specified syndrome register value,
  * targeting the correct exception level for debug exceptions.
@@ -538,6 +548,8 @@ void HELPER(exception_bkpt_insn)(CPUARMState *env, uint32_t syndrome)
     }
     raise_exception(env, EXCP_BKPT, syndrome, debug_el);
 }
+
+#endif
 
 void HELPER(exception_swstep)(CPUARMState *env, uint32_t syndrome)
 {

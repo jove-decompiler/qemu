@@ -11,6 +11,10 @@ i386_ss.add(when: 'CONFIG_TCG', if_true: files(
   'seg_helper.c',
   'tcg-cpu.c',
   'translate.c'), if_false: files('tcg-stub.c'))
+ 
+if get_option('jove_helpers')
+  i386_ss.add(files('jove_helper_stubs.c'))
+endif
 
 subdir('system')
 subdir('user')

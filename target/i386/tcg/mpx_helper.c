@@ -130,6 +130,10 @@ void helper_bndstx32(CPUX86State *env, target_ulong base, target_ulong ptr,
     cpu_stl_data_ra(env, bte + 8, ptr, ra);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memset __builtin_memset
+#endif
+
 void helper_bnd_jmp(CPUX86State *env)
 {
     if (!(env->hflags2 & HF2_MPX_PR_MASK)) {

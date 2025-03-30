@@ -25,6 +25,30 @@
 #include "exec/helper-proto.h"
 #include "helper-tcg.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_raise_interrupt(CPUX86State *env, int intno, int next_eip_addend)
+{
+    (void)env->regs[R_EBX];
+    (void)env->regs[R_ECX];
+    (void)env->regs[R_EDX];
+    (void)env->regs[R_ESI];
+    (void)env->regs[R_EDI];
+    (void)env->regs[R_EBP];
+
+#include "jove_do_syscall.h"
+
+    __builtin_unreachable();
+}
+
+G_NORETURN void helper_raise_exception(CPUX86State *env, int exception_index)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 G_NORETURN void helper_raise_interrupt(CPUX86State *env, int intno,
                                           int next_eip_addend)
 {
@@ -139,6 +163,7 @@ G_NORETURN void raise_exception_ra(CPUX86State *env, int exception_index,
 {
     raise_interrupt2(env, exception_index, 0, 0, 0, retaddr);
 }
+#endif
 
 G_NORETURN void helper_icebp(CPUX86State *env)
 {
