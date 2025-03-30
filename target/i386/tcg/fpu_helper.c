@@ -1295,6 +1295,11 @@ void helper_f2xm1(CPUX86State *env)
     merge_exception_flags(env, old_flags);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+double _jove_tan(double);
+#define tan _jove_tan
+#endif
+
 void helper_fptan(CPUX86State *env)
 {
     double fptemp = floatx80_to_double(env, ST0);
@@ -1309,7 +1314,15 @@ void helper_fptan(CPUX86State *env)
         env->fpus &= ~0x400; /* C2 <-- 0 */
         /* the above code is for |arg| < 2**52 only */
     }
+
+#ifdef CONFIG_JOVE_HELPERS
+#include "jove_help_tan.c.inc"
+#endif
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#undef tan
+#endif
 
 /* Values of pi/4, pi/2, 3pi/4 and pi, with 128-bit precision.  */
 #define pi_4_exp 0x3ffe
@@ -2380,6 +2393,11 @@ void helper_fscale(CPUX86State *env)
     merge_exception_flags(env, old_flags);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+double _jove_sin(double);
+#define sin _jove_sin
+#endif
+
 void helper_fsin(CPUX86State *env)
 {
     double fptemp = floatx80_to_double(env, ST0);
@@ -2391,7 +2409,20 @@ void helper_fsin(CPUX86State *env)
         env->fpus &= ~0x400;  /* C2 <-- 0 */
         /* the above code is for |arg| < 2**53 only */
     }
+
+#ifdef CONFIG_JOVE_HELPERS
+#include "jove_help_sin.c.inc"
+#endif
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#undef sin
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+double _jove_cos(double);
+#define cos _jove_cos
+#endif
 
 void helper_fcos(CPUX86State *env)
 {
@@ -2404,7 +2435,15 @@ void helper_fcos(CPUX86State *env)
         env->fpus &= ~0x400;  /* C2 <-- 0 */
         /* the above code is for |arg| < 2**63 only */
     }
+
+#ifdef CONFIG_JOVE_HELPERS
+#include "jove_help_cos.c.inc"
+#endif
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#undef cos
+#endif
 
 void helper_fxam_ST0(CPUX86State *env)
 {
@@ -2994,6 +3033,10 @@ static bool valid_xrstor_header(X86Access *ac, uint64_t *pxsbv,
     /* The XSTATE_BV field must not set bits not present in XCR0.  */
     return (xstate_bv & ~ac->env->xcr0) == 0;
 }
+ 
+#ifdef CONFIG_JOVE_HELPERS
+#define memset __builtin_memset
+#endif
 
 static void do_xrstor(X86Access *ac, target_ulong ptr,
                       uint64_t rfbm, uint64_t xstate_bv)

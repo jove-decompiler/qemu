@@ -958,7 +958,7 @@ int tcg_can_emit_vec_op(TCGOpcode, TCGType, unsigned);
 void tcg_expand_vec_op(TCGOpcode, TCGType, unsigned, TCGArg, ...);
 
 /* Replicate a constant C according to the log2 of the element size.  */
-uint64_t dup_const(unsigned vece, uint64_t c);
+uint64_t _dup_const(unsigned vece, uint64_t c);
 
 #define dup_const(VECE, C)                                         \
     (__builtin_constant_p(VECE)                                    \
@@ -967,7 +967,7 @@ uint64_t dup_const(unsigned vece, uint64_t c);
         : (VECE) == MO_32 ? 0x0000000100000001ull * (uint32_t)(C)  \
         : (VECE) == MO_64 ? (uint64_t)(C)                          \
         : (qemu_build_not_reached_always(), 0))                    \
-     : dup_const(VECE, C))
+     : _dup_const(VECE, C))
 
 static inline const TCGOpcode *tcg_swap_vecop_list(const TCGOpcode *n)
 {

@@ -7,6 +7,11 @@
 
 #include "exec/helper-head.h.inc"
 
+#ifdef HELPER_PROTO_H_INC_FOR_JOVE
+#define dh_ctype(...)
+#define DEF_HELPER_ATTR
+#else
+
 /*
  * Work around an issue with --enable-lto, in which GCC's ipa-split pass
  * decides to split out the noreturn code paths that raise an exception,
@@ -19,6 +24,7 @@
  * See https://gitlab.com/qemu-project/qemu/-/issues/1454
  */
 #define DEF_HELPER_ATTR  __attribute__((noinline))
+#endif
 
 #define DEF_HELPER_FLAGS_0(name, flags, ret) \
 dh_ctype(ret) HELPER(name) (void) DEF_HELPER_ATTR;

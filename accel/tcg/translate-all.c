@@ -286,6 +286,17 @@ static int setjmp_gen_code(CPUArchState *env, TranslationBlock *tb,
     return tcg_gen_code(tcg_ctx, tb, pc);
 }
 
+#include "jove.h"
+void jv_init_tcg_ctx(void *ctx) {
+  TCGContext *s = (TCGContext *)ctx;
+  s->insn_start_words = TARGET_INSN_START_WORDS;
+#ifdef TCG_GUEST_DEFAULT_MO
+  s->guest_mo = TCG_GUEST_DEFAULT_MO;
+#else
+  s->guest_mo = TCG_MO_ALL;
+#endif
+}
+
 /* Called with mmap_lock held for user mode emulation.  */
 TranslationBlock *tb_gen_code(CPUState *cpu,
                               vaddr pc, uint64_t cs_base,

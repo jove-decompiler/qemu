@@ -21,6 +21,10 @@
 #include "disas/disas.h"
 #include "tb-internal.h"
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
 static void set_can_do_io(DisasContextBase *db, bool val)
 {
     QEMU_BUILD_BUG_ON(sizeof_field(CPUState, neg.can_do_io) != 1);
@@ -47,10 +51,16 @@ static TCGOp *gen_tb_start(DisasContextBase *db, uint32_t cflags)
     TCGOp *icount_start_insn = NULL;
 
     if ((cflags & CF_USE_ICOUNT) || !(cflags & CF_NOIRQ)) {
+#ifdef CONFIG_JOVE
+        (void)count;
+        assert(!(!!(cflags & CF_USE_ICOUNT)));
+        assert(!!(cflags & CF_NOIRQ));
+#else
         count = tcg_temp_new_i32();
         tcg_gen_ld_i32(count, tcg_env,
                        offsetof(ArchCPU, parent_obj.neg.icount_decr.u32)
                        - offsetof(ArchCPU, env));
+#endif /* CONFIG_JOVE */
     }
 
     if (cflags & CF_USE_ICOUNT) {
@@ -167,6 +177,12 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             plugin_gen_insn_start(cpu, db);
         }
 
+#ifndef TARGET_MIPS /* XXX delay slot */
+#ifdef CONFIG_JOVE
+        jv_term_addr_is(db->pc_next);
+#endif
+#endif
+
         /*
          * Disassemble one instruction.  The translate_insn hook should
          * update db->pc_next and db->is_jmp to indicate what should be
@@ -190,6 +206,10 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
 
         /* Stop translation if translate_insn so indicated.  */
         if (db->is_jmp != DISAS_NEXT) {
+#ifdef CONFIG_JOVE
+            if (jv_is_term_unknown())
+              jv_term_is_none(db->pc_next);
+#endif
             break;
         }
 
@@ -197,8 +217,36 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
            or we have executed all of the allowed instructions.  */
         if (tcg_op_buf_full() || db->num_insns >= db->max_insns) {
             db->is_jmp = DISAS_TOO_MANY;
+
+#ifdef CONFIG_JOVE
+#ifdef TARGET_MIPS
+extern bool jv_are_on_delay_slot(DisasContextBase *);
+
+            if (!jv_are_on_delay_slot(db)) {
+#endif
+
+            if (jv_is_term_unknown())
+                jv_term_is_none(db->pc_next);
+#endif
             break;
+#if defined(CONFIG_JOVE) && defined(TARGET_MIPS)
+            }
+#endif
         }
+
+#ifdef CONFIG_JOVE
+        if (jv_get_end_pc()) {
+            if (db->pc_next >= jv_get_end_pc()) {
+                db->is_jmp = DISAS_TOO_MANY;
+
+                if (jv_is_term_unknown()) {
+                    jv_term_addr_is(0); /* XXX */
+                    jv_term_is_none(jv_get_end_pc());
+                }
+                break;
+            }
+        }
+#endif
     }
 
     /* Emit code to exit the TB, as indicated by db->is_jmp.  */

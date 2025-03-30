@@ -20,6 +20,7 @@ gdb_system_ss = gdb_system_ss.apply({})
 libgdb_user = static_library('gdb_user',
                              gdb_user_ss.sources() + genh,
                              c_args: '-DCONFIG_USER_ONLY',
+                             pic: get_option('jove'),
                              build_by_default: false)
 
 libgdb_system = static_library('gdb_system',

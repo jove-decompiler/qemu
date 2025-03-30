@@ -22,6 +22,9 @@
 #include "exec/helper-proto-common.h"
 #include "tcg/tcg-gvec-desc.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#endif
 
 static inline void clear_high(void *d, intptr_t oprsz, uint32_t desc)
 {

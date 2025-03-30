@@ -45,6 +45,94 @@
 #include "internal-common.h"
 #include "internal-target.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void jove_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
+  ((CPUState *)1UL)->cc->tcg_ops->translate_code(NULL, NULL, NULL, 0, NULL);
+
+  //
+  // TCGOp
+  //
+  op->args[0] = a;
+
+  //
+  // QTAILQ_FOREACH
+  //
+  QTAILQ_FOREACH(op, &s->ops, link) {
+    TCGOpcode opc = op->opc;
+    target_ulong tul;
+
+    //
+    // arg_temp
+    //
+    TCGTemp *ts = arg_temp(op->args[0]);
+    (void)ts;
+
+    //
+    // temp_arg
+    //
+    a = temp_arg(ts);
+
+    //
+    // temp_idx
+    //
+    int idx = temp_idx(ts);
+    (void)idx;
+
+
+    int nb_oargs = TCGOP_CALLO(op);
+    int nb_iargs = TCGOP_CALLI(op);
+
+    (void)nb_oargs;
+    (void)nb_iargs;
+
+    TCGLabel *lbl = arg_label(op->args[0]);
+    (void)lbl;
+
+    MemOpIdx oi = op->args[2];
+    MemOp mop = get_memop(oi);
+
+    switch (mop & MO_SSIZE) {
+    case MO_UB:
+        break;
+    case MO_SB:
+        break;
+    case MO_UW:
+        break;
+    case MO_SW:
+        break;
+    case MO_UL:
+        break;
+    case MO_SL:
+        break;
+    case MO_UQ:
+        break;
+    default:
+        break;
+    }
+    (void)mop;
+
+    if (TCG_TARGET_REG_BITS == 64) {}
+
+    if (op->args[0] == TCG_COND_NE)
+      ;
+
+#if 0
+    op->args[0] = TARGET_LONG_BITS == 32 ? TCG_TYPE_I32 : TCG_TYPE_I64;
+    op->args[0] = TARGET_INSN_START_WORDS;
+#endif
+
+#ifdef TCG_GUEST_DEFAULT_MO
+    op->args[0] = TCG_GUEST_DEFAULT_MO;
+#else
+    tcg_ctx->guest_mo = TCG_MO_ALL;
+#endif
+  }
+}
+
+#endif
+
+
 /* -icount align implementation. */
 
 typedef struct SyncClocks {
@@ -374,6 +462,15 @@ static inline bool check_for_breakpoints(CPUState *cpu, vaddr pc,
         check_for_breakpoints_slow(cpu, pc, cflags);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
+{
+    return NULL;
+}
+
+#else
+
 /**
  * helper_lookup_tb_ptr: quick check for next tb
  * @env: current cpu state
@@ -416,6 +513,8 @@ const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
 
     return tb->tc.ptr;
 }
+
+#endif
 
 /* Return the current PC from CPU, which may be cached in TB. */
 static vaddr log_pc(CPUState *cpu, const TranslationBlock *tb)

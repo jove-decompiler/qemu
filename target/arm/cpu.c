@@ -52,6 +52,12 @@
 #include "target/arm/cpu-qom.h"
 #include "target/arm/gtimer.h"
 
+#if defined(CONFIG_JOVE_HELPERS)
+void jove_env(CPUARMState *env) {
+  env->xregs[0];
+}
+#endif
+
 static void arm_cpu_set_pc(CPUState *cs, vaddr value)
 {
     ARMCPU *cpu = ARM_CPU(cs);

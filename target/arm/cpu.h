@@ -3256,6 +3256,16 @@ extern const uint64_t pred_esz_masks[5];
 #define TARGET_PAGE_DATA_SIZE (TARGET_PAGE_SIZE >> (LOG2_TAG_GRANULE + 1))
 
 #ifdef TARGET_TAGGED_ADDRESSES
+
+#ifdef CONFIG_JOVE_HELPERS
+
+static inline target_ulong cpu_untagged_addr(CPUState *cs, target_ulong x)
+{
+    return x;
+}
+
+#else
+
 /**
  * cpu_untagged_addr:
  * @cs: CPU context
@@ -3279,6 +3289,7 @@ static inline target_ulong cpu_untagged_addr(CPUState *cs, target_ulong x)
     }
     return x;
 }
+#endif /* CONFIG_JOVE_HELPERS */
 #endif /* TARGET_TAGGED_ADDRESSES */
 #endif /* CONFIG_USER_ONLY */
 

@@ -38,6 +38,10 @@
 #include "exec/helper-info.c.inc"
 #undef  HELPER_H
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
 /* Fixes for Windows namespace pollution.  */
 #undef IN
 #undef OUT
@@ -1443,6 +1447,10 @@ static void do_gen_rep(DisasContext *s, MemOp ot, TCGv dshift,
         gen_reset_eflags(s, RF_MASK);
     }
     gen_jmp_rel_csize(s, 0, 1);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_cond_jump((s->pc -cur_insn_len(s)) - s->cs_base, s->pc - s->cs_base);
+#endif
 }
 
 static void do_gen_string(DisasContext *s, MemOp ot,
@@ -1541,6 +1549,10 @@ static void gen_exception(DisasContext *s, int trapno)
 static void gen_illegal_opcode(DisasContext *s)
 {
     gen_exception(s, EXCP06_ILLOP);
+
+#ifdef CONFIG_JOVE
+    jv_illegal_op(s->pc_save);
+#endif
 }
 
 /* Generate #GP for the current instruction. */
@@ -1636,11 +1648,19 @@ static uint64_t advance_pc(CPUX86State *env, DisasContext *s, int num_bytes)
     /* This is a subsequent insn that crosses a page boundary.  */
     if (s->base.num_insns > 1 &&
         !translator_is_same_page(&s->base, s->pc + num_bytes - 1)) {
+#ifndef CONFIG_JOVE
         siglongjmp(s->jmpbuf, 2);
+#endif
     }
 
     s->pc += num_bytes;
     if (unlikely(cur_insn_len(s) > X86_MAX_INSN_LENGTH)) {
+#ifdef CONFIG_JOVE
+        assert(false && "X86_MAX_INSN_LENGTH");
+        __builtin_trap();
+        __builtin_unreachable();
+#endif
+
         /* If the instruction's 16th byte is on a different page than the 1st, a
          * page fault on the second page wins over the general protection fault
          * caused by the instruction being too long.
@@ -1725,6 +1745,10 @@ static AddressParts gen_lea_modrm_0(CPUX86State *env, DisasContext *s,
                 if (CODE64(s) && !havesib) {
                     base = -2;
                     disp += s->pc + s->rip_offset;
+
+#ifdef CONFIG_JOVE
+                    tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
                 }
             }
             break;
@@ -1968,6 +1992,10 @@ static void gen_conditional_jump_labels(DisasContext *s, target_long diff,
 
     gen_set_label(taken);
     gen_jmp_rel(s, s->dflag, diff, 0);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_cond_jump((s->pc + diff) - s->cs_base, s->pc - s->cs_base);
+#endif
 }
 
 static void gen_cmovcc(DisasContext *s, int b, TCGv dest, TCGv src)
@@ -2069,6 +2097,10 @@ static void gen_lea_ss_ofs(DisasContext *s, TCGv dest, TCGv src, target_ulong of
     gen_lea_v_seg_dest(s, mo_stacksize(s), dest, src, R_SS, -1);
 }
 
+#ifdef CONFIG_JOVE
+static __thread bool gen_push_v_PCRel = false;
+#endif
+
 /* Generate a push. It depends on ss32, addseg and dflag.  */
 static void gen_push_v(DisasContext *s, TCGv val)
 {
@@ -2081,6 +2113,14 @@ static void gen_push_v(DisasContext *s, TCGv val)
 
     /* Now reduce the value to the address size and apply SS base.  */
     gen_lea_ss_ofs(s, s->A0, new_esp, 0);
+
+#ifdef CONFIG_JOVE
+    if (gen_push_v_PCRel) {
+        tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+        gen_push_v_PCRel = false;
+    }
+#endif
+
     gen_op_st_v(s, d_ot, val, s->A0);
     gen_op_mov_reg_v(s, a_ot, R_ESP, new_esp);
 }
@@ -2256,7 +2296,9 @@ gen_eob(DisasContext *s, int mode)
         gen_reset_eflags(s, RF_MASK);
     }
     if (mode == DISAS_EOB_RECHECK_TF) {
+#ifndef CONFIG_JOVE
         gen_helper_rechecking_single_step(tcg_env);
+#endif
         tcg_gen_exit_tb(NULL, 0);
     } else if ((s->flags & HF_TF_MASK) && mode != DISAS_EOB_INHIBIT_IRQ) {
         gen_helper_single_step(tcg_env);
@@ -3594,6 +3636,10 @@ static void gen_multi0F(DisasContext *s, X86DecodedInsn *decode)
                 }
             }
         }
+
+#ifdef CONFIG_JOVE
+        jv_term_is_unreachable();
+#endif
         break;
     default:
         g_assert_not_reached();
@@ -3605,6 +3651,19 @@ static void gen_multi0F(DisasContext *s, X86DecodedInsn *decode)
 }
 
 #include "decode-new.c.inc"
+
+#ifdef CONFIG_JOVE
+
+uint32_t jv_hflags_of_cpu_env(CPUState *cpu) {
+  vaddr pc_bak;
+  uint64_t cs_base_bak;
+  uint32_t flags;
+
+  cpu_get_tb_cpu_state(cpu_env(cpu), &pc_bak, &cs_base_bak, &flags);
+  return flags;
+}
+
+#endif
 
 void tcg_x86_init(void)
 {
@@ -3795,6 +3854,9 @@ static void i386_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
         gen_exception_gpf(dc);
         break;
     case 2:
+#ifdef CONFIG_JOVE
+        assert(false && "should never get here");
+#endif
         /* Restore state that may affect the next instruction. */
         dc->pc = dc->base.pc_next;
         assert(dc->cc_op_dirty == orig_cc_op_dirty);
@@ -3808,6 +3870,40 @@ static void i386_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
     default:
         g_assert_not_reached();
     }
+
+#if 0
+#ifdef CONFIG_JOVE
+    {
+      DisasContext *const s = container_of(dcbase, DisasContext, base);
+
+      s->pc = orig_pc_save; /* XXX hacky? */
+
+      const void *code = g2h_untagged(s->pc);
+
+      static const uint8_t needle[] = {0x65, 0xff, 0x15, 0x10, 0x00, 0x00, 0x00};
+
+      if (0) {
+#ifdef TARGET_I386
+      } else if (memcmp(code, needle, sizeof(needle)) == 0) {
+        //
+        // XXX hack for call dword ptr gs:[16]
+        //
+        gen_interrupt(s, 0x80); /* int 0x80 */
+        s->pc += sizeof(needle); /* advance pc */
+
+        jv_term_is_none(s->pc - s->cs_base);
+#endif
+      } else if (*((const uint32_t *)(code)) == 0xc278e88f) {
+      //
+      // XXX hack for XOP instructions
+      //
+        s->pc += 6;
+        jv_term_is_unreachable();
+      }
+    }
+#endif
+#endif
+
 
     /*
      * Instruction decoding completed (possibly with #GP if the

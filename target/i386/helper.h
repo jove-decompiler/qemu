@@ -54,7 +54,11 @@ DEF_HELPER_1(sysenter, void, env)
 DEF_HELPER_2(sysexit, void, env, int)
 DEF_HELPER_2(syscall, void, env, int)
 DEF_HELPER_2(sysret, void, env, int)
+#ifdef CONFIG_JOVE_HELPERS
+DEF_HELPER_FLAGS_1(pause, TCG_CALL_NO_WG, void, env)
+#else
 DEF_HELPER_FLAGS_1(pause, TCG_CALL_NO_WG, noreturn, env)
+#endif
 DEF_HELPER_FLAGS_3(raise_interrupt, TCG_CALL_NO_WG, noreturn, env, int, int)
 DEF_HELPER_FLAGS_2(raise_exception, TCG_CALL_NO_WG, noreturn, env, int)
 DEF_HELPER_FLAGS_1(icebp, TCG_CALL_NO_WG, noreturn, env)
@@ -71,7 +75,11 @@ DEF_HELPER_1(rechecking_single_step, void, env)
 DEF_HELPER_1(cpuid, void, env)
 DEF_HELPER_FLAGS_1(rdpid, TCG_CALL_NO_WG, tl, env)
 DEF_HELPER_1(rdtsc, void, env)
+#ifdef CONFIG_JOVE_HELPERS
+DEF_HELPER_FLAGS_1(rdpmc, TCG_CALL_NO_WG, void, env)
+#else
 DEF_HELPER_FLAGS_1(rdpmc, TCG_CALL_NO_WG, noreturn, env)
+#endif
 
 #ifndef CONFIG_USER_ONLY
 DEF_HELPER_3(outb, void, env, i32, i32)

@@ -514,6 +514,46 @@ void HELPER(exception_with_syndrome_el)(CPUARMState *env, uint32_t excp,
     raise_exception(env, excp, syndrome, target_el);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
+                                     uint32_t syndrome)
+{
+    (void)EXCP_SWI;
+    (void)EXCP_UDEF;
+    (void)EXCP_SWI;
+    (void)EXCP_PREFETCH_ABORT;
+    (void)EXCP_DATA_ABORT;
+    (void)EXCP_IRQ;
+    (void)EXCP_FIQ;
+    (void)EXCP_BKPT;
+    (void)EXCP_EXCEPTION_EXIT;
+    (void)EXCP_KERNEL_TRAP;
+    (void)EXCP_HVC;
+    (void)EXCP_HYP_TRAP;
+    (void)EXCP_SMC;
+    (void)EXCP_VIRQ;
+    (void)EXCP_VFIQ;
+    (void)EXCP_SEMIHOST;
+    (void)EXCP_NOCP;
+    (void)EXCP_INVSTATE;
+    (void)EXCP_STKOF;
+    (void)EXCP_LAZYFP;
+    (void)EXCP_LSERR;
+    (void)EXCP_UNALIGNED;
+    (void)EXCP_DIVBYZERO;
+    (void)EXCP_VSERR;
+    (void)EXCP_GPC;
+    (void)EXCP_NMI;
+    (void)EXCP_VINMI;
+    (void)EXCP_VFNMI;
+    (void)EXCP_MON_TRAP;
+
+#include "jove_do_syscall.h"
+}
+
+#else
+
 /*
  * Raise an exception with the specified syndrome register value
  * to the default target el.
@@ -523,6 +563,8 @@ void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
 {
     raise_exception(env, excp, syndrome, exception_target_el(env));
 }
+
+#endif
 
 uint32_t HELPER(cpsr_read)(CPUARMState *env)
 {
@@ -756,6 +798,16 @@ uint32_t HELPER(mrs_banked)(CPUARMState *env, uint32_t tgtmode, uint32_t regno)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
+                                        uint32_t syndrome, uint32_t isread) {
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
                                         uint32_t syndrome, uint32_t isread)
 {
@@ -912,6 +964,17 @@ const void *HELPER(access_check_cp_reg)(CPUARMState *env, uint32_t key,
     raise_exception(env, excp, syndrome, target_el);
 }
 
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
+{
+    return (void *)((uintptr_t)key);
+}
+
+#else
+
 const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
 {
     ARMCPU *cpu = env_archcpu(env);
@@ -920,6 +983,8 @@ const void *HELPER(lookup_cp_reg)(CPUARMState *env, uint32_t key)
     assert(ri != NULL);
     return ri;
 }
+
+#endif
 
 /*
  * Test for HCR_EL2.TIDCP at EL1.
@@ -966,6 +1031,16 @@ void HELPER(tidcp_el0)(CPUARMState *env, uint32_t syndrome)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
 {
     const ARMCPRegInfo *ri = rip;
@@ -978,6 +1053,18 @@ void HELPER(set_cp_reg)(CPUARMState *env, const void *rip, uint32_t value)
         ri->writefn(env, ri, value);
     }
 }
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
 
 uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
 {
@@ -995,6 +1082,18 @@ uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
     return res;
 }
 
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
 {
     const ARMCPRegInfo *ri = rip;
@@ -1007,6 +1106,25 @@ void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
         ri->writefn(env, ri, value);
     }
 }
+
+#endif
+
+#if defined(CONFIG_JOVE_HELPERS) && defined(__aarch64__)
+
+uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
+{
+    uint32_t key = (uint32_t)((uintptr_t)rip);
+    if (key == 0x1013d807) {
+        uint64_t res;
+        asm volatile("mrs %0, dczid_el0" : "=r"(res));
+        return res;
+    }
+
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
 
 uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 {
@@ -1023,6 +1141,8 @@ uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 
     return res;
 }
+
+#endif
 
 void HELPER(pre_hvc)(CPUARMState *env)
 {
