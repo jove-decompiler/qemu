@@ -19,6 +19,9 @@ extern bool one_insn_per_tb;
 
 extern bool icount_align_option;
 
+#ifdef CONFIG_JOVE_HELPERS
+static inline bool cpu_in_serial_context(CPUState *cs) { return false; }
+#else
 /*
  * Return true if CS is not running in parallel with other cpus, either
  * because there are no other cpus or we are within an exclusive context.
@@ -27,6 +30,7 @@ static inline bool cpu_in_serial_context(CPUState *cs)
 {
     return !tcg_cflags_has(cs, CF_PARALLEL) || cpu_in_exclusive_context(cs);
 }
+#endif /* CONFIG_JOVE_HELPERS */
 
 /**
  * cpu_plugin_mem_cbs_enabled() - are plugin memory callbacks enabled?
