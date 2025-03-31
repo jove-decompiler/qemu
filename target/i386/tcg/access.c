@@ -8,6 +8,8 @@
 #include "access.h"
 
 
+#ifndef CONFIG_JOVE_HELPERS
+
 void access_prepare_mmu(X86Access *ret, CPUX86State *env,
                         vaddr vaddr, unsigned size,
                         MMUAccessType type, int mmu_idx, uintptr_t ra)
@@ -166,3 +168,5 @@ void access_stq(X86Access *ac, vaddr addr, uint64_t val)
         cpu_stq_le_mmuidx_ra(ac->env, addr, val, ac->mmu_idx, ac->ra);
     }
 }
+
+#endif /* CONFIG_JOVE_HELPERS */
