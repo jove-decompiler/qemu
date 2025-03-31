@@ -991,6 +991,9 @@ void *page_get_target_data(vaddr address, size_t size)
 static void *cpu_mmu_lookup(CPUState *cpu, vaddr addr,
                             MemOp mop, uintptr_t ra, MMUAccessType type)
 {
+#ifdef CONFIG_JOVE_HELPERS
+    void *ret;
+#else
     int a_bits = memop_alignment_bits(mop);
     void *ret;
 
@@ -998,6 +1001,7 @@ static void *cpu_mmu_lookup(CPUState *cpu, vaddr addr,
     if (unlikely(addr & ((1 << a_bits) - 1))) {
         cpu_loop_exit_sigbus(cpu, addr, type, ra);
     }
+#endif
 
     ret = g2h(cpu, addr);
     set_helper_retaddr(ra);
