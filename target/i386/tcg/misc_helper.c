@@ -195,6 +195,15 @@ void helper_wrpkru(CPUX86State *env, uint32_t ecx, uint64_t val)
     tlb_flush(cs);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+__attribute__((__always_inline__, __nodebug__, __target__("rdpid")))
+target_ulong HELPER(rdpid)(CPUX86State *env) {
+  return __builtin_ia32_rdpid();
+}
+
+#else
+
 target_ulong HELPER(rdpid)(CPUX86State *env)
 {
 #if !defined CONFIG_USER_ONLY
@@ -209,3 +218,5 @@ target_ulong HELPER(rdpid)(CPUX86State *env)
     return 0;
 #endif
 }
+
+#endif /* CONFIG_JOVE_HELPERS */
