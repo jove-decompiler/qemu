@@ -732,6 +732,8 @@ if get_option('jove_helpers')
                        '-Xclang', meson.source_root(), \
                        '-Xclang', '-plugin-arg-carbon-collect', \
                        '-Xclang', meson.current_build_dir(), language : 'c')
+  add_global_arguments('-DG_DISABLE_ASSERT', language : 'c')
+  add_global_arguments('-DNDEBUG', language : 'c')
 endif
 
 # Collect warning flags we want to set, sorted alphabetically
