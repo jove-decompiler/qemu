@@ -58,14 +58,18 @@ typedef unsigned long		uintptr_t;
 
 typedef __kernel_size_t		size_t;
 
+#if 0 /* FIXME */
 u32 __pure crc32_le_arch(u32 crc, const u8 *p, size_t len);
+#endif
 
-u32 __pure crc32_le_base(u32 crc, const u8 *p, size_t len);
+static u32 __pure crc32_le_base(u32 crc, const u8 *p, size_t len);
 
 static inline u32 __pure crc32_le(u32 crc, const u8 *p, size_t len)
 {
+#if 0 /* FIXME */
 	if (IS_ENABLED(CONFIG_CRC32_ARCH))
 		return crc32_le_arch(crc, p, len);
+#endif
 	return crc32_le_base(crc, p, len);
 }
 
