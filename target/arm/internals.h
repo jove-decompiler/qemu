@@ -288,12 +288,26 @@ FIELD(CNTHCTL, CNTPMASK, 19, 1)
 G_NORETURN void raise_exception(CPUARMState *env, uint32_t excp,
                                 uint32_t syndrome, uint32_t target_el);
 
+#ifdef CONFIG_JOVE_HELPERS
+
+inline
+G_NORETURN void raise_exception_ra(CPUARMState *env, uint32_t excp,
+                                      uint32_t syndrome, uint32_t target_el,
+                                      uintptr_t ra) {
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 /*
  * Similarly, but also use unwinding to restore cpu state.
  */
 G_NORETURN void raise_exception_ra(CPUARMState *env, uint32_t excp,
                                       uint32_t syndrome, uint32_t target_el,
                                       uintptr_t ra);
+
+#endif /* CONFIG_JOVE_HELPERS */
 
 /*
  * For AArch64, map a given EL to an index in the banked_spsr array.

@@ -70,6 +70,8 @@ void raise_exception(CPUARMState *env, uint32_t excp,
     cpu_loop_exit(cs);
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 void raise_exception_ra(CPUARMState *env, uint32_t excp, uint32_t syndrome,
                         uint32_t target_el, uintptr_t ra)
 {
@@ -83,6 +85,8 @@ void raise_exception_ra(CPUARMState *env, uint32_t excp, uint32_t syndrome,
     cpu_restore_state(cs, ra);
     raise_exception(env, excp, syndrome, target_el);
 }
+
+#endif
 
 uint64_t HELPER(neon_tbl)(CPUARMState *env, uint32_t desc,
                           uint64_t ireg, uint64_t def)
