@@ -758,6 +758,8 @@ void force_sigsegv(int oldsig)
 }
 #endif
 
+#ifndef CONFIG_JOVE_HELPERS
+
 void cpu_loop_exit_sigsegv(CPUState *cpu, target_ulong addr,
                            MMUAccessType access_type, bool maperr, uintptr_t ra)
 {
@@ -773,6 +775,8 @@ void cpu_loop_exit_sigsegv(CPUState *cpu, target_ulong addr,
     cpu->exception_index = EXCP_INTERRUPT;
     cpu_loop_exit_restore(cpu, ra);
 }
+
+#endif /* CONFIG_JOVE_HELPERS */
 
 void cpu_loop_exit_sigbus(CPUState *cpu, target_ulong addr,
                           MMUAccessType access_type, uintptr_t ra)
