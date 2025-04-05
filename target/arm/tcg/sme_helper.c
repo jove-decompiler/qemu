@@ -29,6 +29,11 @@
 #include "vec_internal.h"
 #include "sve_ldst_internal.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#endif
+
 void helper_set_svcr(CPUARMState *env, uint32_t val, uint32_t mask)
 {
     aarch64_set_svcr(env, val, mask);

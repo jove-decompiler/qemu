@@ -42,6 +42,12 @@
 #endif
 #include "vec_internal.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#define memmove __builtin_memmove
+#endif
+
 /* C2.4.7 Multiply and divide */
 /* special cases for 0 and LLONG_MIN are mandated by the standard */
 uint64_t HELPER(udiv64)(uint64_t num, uint64_t den)

@@ -33,6 +33,12 @@
 #include "user/page-protection.h"
 #endif
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#define memmove __builtin_memmove
+#endif
+
 
 /* Return a value for NZCV as per the ARM PredTest pseudofunction.
  *
