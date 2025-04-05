@@ -26,6 +26,11 @@
 #include "crypto/clmul.h"
 #include "vec_internal.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#endif
+
 /*
  * Data for expanding active predicate bits to bytes, for byte elements.
  *
