@@ -785,6 +785,14 @@ int page_unprotect(tb_page_addr_t address, uintptr_t pc)
     return current_tb_invalidated ? 2 : 1;
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static int probe_access_internal(CPUArchState *env, vaddr addr,
+                                 int fault_size, MMUAccessType access_type,
+                                 bool nonfault, uintptr_t ra) { return 0; }
+
+#else
+
 static int probe_access_internal(CPUArchState *env, vaddr addr,
                                  int fault_size, MMUAccessType access_type,
                                  bool nonfault, uintptr_t ra)
@@ -830,6 +838,8 @@ static int probe_access_internal(CPUArchState *env, vaddr addr,
     cpu_loop_exit_sigsegv(env_cpu(env), addr, access_type, maperr, ra);
 #endif
 }
+
+#endif /* CONFIG_JOVE_HELPERS */
 
 int probe_access_flags(CPUArchState *env, vaddr addr, int size,
                        MMUAccessType access_type, int mmu_idx,
