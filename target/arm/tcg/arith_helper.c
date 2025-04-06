@@ -9,7 +9,9 @@
 #include "cpu.h"
 #include "exec/helper-proto.h"
 #include "qemu/crc32c.h"
+#if !(defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS))
 #include <zlib.h> /* for crc32 */
+#endif
 
 /*
  * Note that signed overflow is undefined in C.  The following routines are
@@ -269,6 +271,11 @@ uint32_t HELPER(sel_flags)(uint32_t flags, uint32_t a, uint32_t b)
     }
     return (a & mask) | (b & ~mask);
 }
+
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#undef crc32
+#include "linux_aarch64_crc32.c"
+#endif
 
 /*
  * CRC helpers.

@@ -409,6 +409,7 @@ AH_MINMAX_HELPER(vfp_ah_maxs, float32, float32, max)
 AH_MINMAX_HELPER(vfp_ah_maxd, float64, float64, max)
 
 #if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#undef crc32
 #include "linux_aarch64_crc32.c"
 #endif
 
