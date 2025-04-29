@@ -1421,16 +1421,6 @@ void helper_ltr(CPUX86State *env, int selector)
 
 #endif
 
-#ifdef CONFIG_JOVE_HELPERS
-
-void helper_load_seg(CPUX86State *env, int seg_reg, int selector)
-{
-    __builtin_trap();
-    __builtin_unreachable();
-}
-
-#else
-
 /* only works if protected mode and not VM86. seg_reg must be != R_CS */
 void helper_load_seg(CPUX86State *env, int seg_reg, int selector)
 {
@@ -1518,9 +1508,6 @@ void helper_load_seg(CPUX86State *env, int seg_reg, int selector)
 #endif
     }
 }
-
-#endif
-
 
 #ifdef CONFIG_JOVE_HELPERS
 
