@@ -700,6 +700,7 @@ static int parse_args(int argc, char **argv)
 #ifdef CONFIG_JOVE_HELPERS
 static void _jove_print_tcg_constants(void);
 static void _jove_print_helpers(void);
+static void _jove_dump_env(CPUArchState *);
 #endif
 
 #ifdef CONFIG_JOVE
@@ -1067,16 +1068,18 @@ int main(int argc, char **argv, char **envp)
        the real value of GUEST_BASE into account.  */
     tcg_prologue_init();
 
+    target_cpu_copy_regs(env, regs);
+
 #ifdef CONFIG_JOVE_HELPERS
     if (getenv("JOVE_PRINT_HELPERS"))
       _jove_print_helpers();
     else if (getenv("JOVE_PRINT_CONSTANTS"))
       _jove_print_tcg_constants();
+    else if (getenv("JOVE_DUMP_ENV"))
+      _jove_dump_env(env);
 
     exit(0);
 #endif
-
-    target_cpu_copy_regs(env, regs);
 
     if (gdbstub) {
         gdbserver_start(gdbstub, &error_fatal);
@@ -1442,6 +1445,11 @@ void _jove_print_helpers(void) {
 #include "exec/helper-proto.h"
 
   printf("\n");
+}
+
+void _jove_dump_env(CPUArchState *env) {
+  ssize_t wrote = qemu_write_full(STDOUT_FILENO, env, sizeof(*env));
+  assert(wrote == sizeof(*env));
 }
 
 #endif
