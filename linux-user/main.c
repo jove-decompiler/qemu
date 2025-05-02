@@ -1447,7 +1447,7 @@ void _jove_dump_env(CPUArchState *env) {
   assert(wrote == sizeof(*env));
 }
 
-#endif
+#endif /* CONFIG_JOVE_HELPERS */
 
 #if defined(CONFIG_JOVE) && !defined(CONFIG_TARGET_XML_FILES)
 
