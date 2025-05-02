@@ -1077,8 +1077,10 @@ int main(int argc, char **argv, char **envp)
       _jove_print_tcg_constants();
     else if (getenv("JOVE_DUMP_ENV"))
       _jove_dump_env(env);
+    else
+      exit(EXIT_FAILURE);
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 #endif
 
     if (gdbstub) {
