@@ -61,7 +61,6 @@ void jove_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
   //
   QTAILQ_FOREACH(op, &s->ops, link) {
     TCGOpcode opc = op->opc;
-    target_ulong tul;
 
     //
     // arg_temp
