@@ -415,6 +415,13 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
     return true;
 }
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+
+static void record_save(DisasContextBase *db, vaddr pc,
+                        const void *from, int size) {}
+
+#else
+
 static void record_save(DisasContextBase *db, vaddr pc,
                         const void *from, int size)
 {
@@ -447,6 +454,8 @@ static void record_save(DisasContextBase *db, vaddr pc,
 
     memcpy(db->record + (offset - db->record_start), from, size);
 }
+
+#endif
 
 size_t translator_st_len(const DisasContextBase *db)
 {
