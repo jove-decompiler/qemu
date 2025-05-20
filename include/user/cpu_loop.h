@@ -49,7 +49,7 @@ bool handle_sigsegv_accerr_write(CPUState *cpu, sigset_t *old_set,
 #ifdef CONFIG_JOVE_HELPERS
 
 inline
-G_NORETURN void cpu_loop_exit_sigsegv(CPUState *cpu, target_ulong addr,
+G_NORETURN void cpu_loop_exit_sigsegv(CPUState *cpu, vaddr addr,
                                       MMUAccessType access_type,
                                       bool maperr, uintptr_t ra) {
     __builtin_trap();
