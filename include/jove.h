@@ -26,8 +26,6 @@ JV_FUNC_ATTR const char *jv_get_global_name(int);
 
 JV_FUNC_ATTR void jv_tcg_func_start(void *ctx);
 
-JV_FUNC_ATTR void jv_init_tcg_ctx(void *ctx);
-
 JV_FUNC_ATTR void jv_term_is_cond_jump(uint64_t Target, uint64_t NextPC);
 JV_FUNC_ATTR void jv_term_is_uncond_jump(uint64_t Target);
 JV_FUNC_ATTR void jv_term_is_ind_call(uint64_t NextPC);
