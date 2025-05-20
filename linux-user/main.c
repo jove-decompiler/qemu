@@ -705,6 +705,13 @@ static void _jove_dump_env(CPUArchState *);
 
 #ifdef CONFIG_JOVE
 CPUState *jv_cpu = NULL;
+bool jv_is_mips_target =
+#ifdef TARGET_MIPS
+    true
+#else
+    false
+#endif
+    ;
 
 static void _jove_check_did(const bool *did) {
   if (!(*did)) {
