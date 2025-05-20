@@ -1,3 +1,4 @@
+#if !defined(CONFIG_JOVE) && !defined(CONFIG_JOVE_HELPERS)
 /* Poison identifiers that should not be used when building
    target independent device code.  */
 
@@ -74,3 +75,4 @@
 #pragma GCC poison KVM_HAVE_MCE_INJECTION
 
 #endif
+#endif /* JOVE */
