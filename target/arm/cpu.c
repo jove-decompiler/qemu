@@ -55,6 +55,7 @@
 
 #if defined(CONFIG_JOVE_HELPERS)
 void jove_env(CPUARMState *env) {
+  target_ulong ul;
   env->xregs[0];
 }
 #endif

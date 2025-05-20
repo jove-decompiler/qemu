@@ -50,6 +50,7 @@
 
 #ifdef CONFIG_JOVE_HELPERS
 void jove_env(CPUX86State *env) {
+  target_ulong ul;
   env->regs[R_ESP];
 }
 #endif

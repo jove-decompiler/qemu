@@ -38,6 +38,7 @@
 
 #if defined(CONFIG_JOVE_HELPERS)
 void jove_env(CPUMIPSState *env) {
+  target_ulong ul;
   env->active_tc.gpr[0];
 }
 #endif
