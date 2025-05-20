@@ -129,6 +129,8 @@ bool translator_use_goto_tb(DisasContextBase *db, vaddr dest)
     return translator_is_same_page(db, dest);
 }
 
+extern bool jv_is_mips_target;
+
 void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
                      vaddr pc, void *host_pc, const TranslatorOps *ops,
                      DisasContextBase *db)
@@ -164,6 +166,8 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
     plugin_enabled = plugin_gen_tb_start(cpu, db);
     db->plugin_enabled = plugin_enabled;
 
+    const bool isMipsTarget = jv_is_mips_target;
+
     while (true) {
         *max_insns = ++db->num_insns;
         ops->insn_start(db, cpu);
@@ -177,10 +181,9 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             plugin_gen_insn_start(cpu, db);
         }
 
-#ifndef TARGET_MIPS /* XXX delay slot */
 #ifdef CONFIG_JOVE
+        if (!isMipsTarget) /* XXX delay slot */
         jv_term_addr_is(db->pc_next);
-#endif
 #endif
 
         /*
@@ -219,17 +222,14 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
             db->is_jmp = DISAS_TOO_MANY;
 
 #ifdef CONFIG_JOVE
-#ifdef TARGET_MIPS
 extern bool jv_are_on_delay_slot(DisasContextBase *);
-
-            if (!jv_are_on_delay_slot(db)) {
-#endif
+            if (!isMipsTarget || !jv_are_on_delay_slot(db)) {
 
             if (jv_is_term_unknown())
                 jv_term_is_none(db->pc_next);
 #endif
             break;
-#if defined(CONFIG_JOVE) && defined(TARGET_MIPS)
+#ifdef CONFIG_JOVE
             }
 #endif
         }
