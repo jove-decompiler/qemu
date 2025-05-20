@@ -15363,11 +15363,6 @@ void mips_translate_code(CPUState *cs, TranslationBlock *tb,
 
 #ifdef CONFIG_JOVE
 
-uint32_t jv_hflags_of_cpu_env(CPUState *cpu) {
-    return cpu_env(cpu)->hflags &
-           (MIPS_HFLAG_TMASK | MIPS_HFLAG_BMASK | MIPS_HFLAG_HWRENA_ULR);
-}
-
 bool jv_are_on_delay_slot(DisasContextBase *dcbase) {
     DisasContext *ctx = container_of(dcbase, DisasContext, base);
     return !!(ctx->hflags & MIPS_HFLAG_BMASK);

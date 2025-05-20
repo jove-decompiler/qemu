@@ -26,8 +26,6 @@ JV_FUNC_ATTR const char *jv_get_global_name(int);
 
 JV_FUNC_ATTR void jv_tcg_func_start(void *ctx);
 
-JV_FUNC_ATTR uint32_t jv_hflags_of_cpu_env(CPUState *cpu);
-
 JV_FUNC_ATTR void jv_init_tcg_ctx(void *ctx);
 
 JV_FUNC_ATTR void jv_term_is_cond_jump(uint64_t Target, uint64_t NextPC);
