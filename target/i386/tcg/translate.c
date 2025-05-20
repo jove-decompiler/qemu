@@ -3700,19 +3700,6 @@ static void gen_multi0F(DisasContext *s, X86DecodedInsn *decode)
 
 #include "decode-new.c.inc"
 
-#ifdef CONFIG_JOVE
-
-uint32_t jv_hflags_of_cpu_env(CPUState *cpu) {
-  vaddr pc_bak;
-  uint64_t cs_base_bak;
-  uint32_t flags;
-
-  cpu_get_tb_cpu_state(cpu_env(cpu), &pc_bak, &cs_base_bak, &flags);
-  return flags;
-}
-
-#endif
-
 void tcg_x86_init(void)
 {
     static const char reg_names[CPU_NB_REGS][4] = {
