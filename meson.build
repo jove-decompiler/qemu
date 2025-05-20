@@ -4107,6 +4107,7 @@ libuser = static_library('user',
                          c_args: ['-DCONFIG_USER_ONLY',
                                   '-DCOMPILING_SYSTEM_VS_USER'],
                          dependencies: libuser_ss.dependencies(),
+                         pic: get_option('jove'),
                          build_by_default: false)
 libuser = declare_dependency(objects: libuser.extract_all_objects(recursive: false),
                              dependencies: libuser_ss.dependencies())
@@ -4118,6 +4119,7 @@ libsystem = static_library('system',
                            c_args: ['-DCONFIG_SOFTMMU',
                                     '-DCOMPILING_SYSTEM_VS_USER'],
                            dependencies: libsystem_ss.dependencies(),
+                           pic: get_option('jove'),
                            build_by_default: false)
 libsystem = declare_dependency(objects: libsystem.extract_all_objects(recursive: false),
                                dependencies: libsystem_ss.dependencies())
@@ -4157,6 +4159,7 @@ foreach target : target_dirs
         build_by_default: false,
         sources: src.all_sources() + genh,
         include_directories: inc,
+        pic: get_option('jove'),
         c_args: target_system_c_args,
         dependencies: src.all_dependencies())
       hw_common_arch_libs += {target_base_arch: lib}
@@ -4171,6 +4174,7 @@ foreach target : target_dirs
         build_by_default: false,
         sources: src.all_sources() + genh,
         include_directories: inc,
+        pic: get_option('jove'),
         c_args: target_c_args,
         dependencies: src.all_dependencies())
       target_common_arch_libs += {target_base_arch: lib}
@@ -4185,6 +4189,7 @@ foreach target : target_dirs
         build_by_default: false,
         sources: src.all_sources() + genh,
         include_directories: inc,
+        pic: get_option('jove'),
         c_args: target_system_c_args,
         dependencies: src.all_dependencies())
       target_common_system_arch_libs += {target_base_arch: lib}
