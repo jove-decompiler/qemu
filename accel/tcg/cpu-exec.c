@@ -50,6 +50,7 @@
 
 void jove_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
   ((CPUState *)1UL)->cc->tcg_ops->translate_code(NULL, NULL, NULL, 0, NULL);
+  tcg_type_size(TCGOP_TYPE(op));
 
   //
   // TCGOp
