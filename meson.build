@@ -4434,6 +4434,7 @@ foreach target : target_dirs
                  dependencies: fpu_soft.dependencies(),
                  include_directories: target_inc,
                  c_args: libfpu_soft_c_args,
+                 pic: true,
                  build_by_default: true,
                  name_suffix: 'a')
 
