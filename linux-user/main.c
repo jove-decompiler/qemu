@@ -1458,7 +1458,8 @@ void _jove_print_helpers(void) {
 
 void _jove_dump_env(CPUArchState *env) {
   ssize_t wrote = qemu_write_full(STDOUT_FILENO, env, sizeof(*env));
-  assert(wrote == sizeof(*env));
+  if (wrote != sizeof(*env))
+    abort();
 }
 
 #endif /* CONFIG_JOVE_HELPERS */
