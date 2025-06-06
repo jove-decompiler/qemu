@@ -25,12 +25,22 @@
 #include "jove.h"
 #endif
 
+#ifdef CONFIG_JOVE
+
+static void set_can_do_io(DisasContextBase *db, bool val)
+{
+}
+
+#else
+
 static void set_can_do_io(DisasContextBase *db, bool val)
 {
     QEMU_BUILD_BUG_ON(sizeof_field(CPUState, neg.can_do_io) != 1);
     tcg_gen_st8_i32(tcg_constant_i32(val), tcg_env,
                     offsetof(CPUState, neg.can_do_io) - sizeof(CPUState));
 }
+
+#endif
 
 bool translator_io_start(DisasContextBase *db)
 {
