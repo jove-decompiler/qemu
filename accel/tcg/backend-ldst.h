@@ -31,11 +31,33 @@
  * If tcg_req_mo indicates a barrier for @type is required
  * for the guest memory model, issue a host memory barrier.
  */
+#ifdef CONFIG_JOVE_HELPERS
+
+/* XXX */
+#if defined(__x86_64__) || defined(__i386__)
+#define JOVE_GUEST_DEFAULT_MEMORY_ORDER (TCG_MO_ALL & ~TCG_MO_ST_LD)
+#elif defined(__aarch64__) || defined(__mips64) || defined(__mips__)
+#define JOVE_GUEST_DEFAULT_MEMORY_ORDER 0
+#else
+#error
+#endif
+
+#define cpu_req_mo(cpu, type)     \
+    do {                          \
+        if (tcg_req_mo(JOVE_GUEST_DEFAULT_MEMORY_ORDER, type)) { \
+            smp_mb();             \
+        }                         \
+    } while (0)
+
+#else
+
 #define cpu_req_mo(cpu, type)     \
     do {                          \
         if (tcg_req_mo(cpu->cc->tcg_ops->guest_default_memory_order, type)) { \
             smp_mb();             \
         }                         \
     } while (0)
+
+#endif /* CONFIG_JOVE_HELPERS */
 
 #endif
