@@ -29,6 +29,15 @@ extern unsigned long reserved_va;
  */
 extern unsigned long guest_addr_max;
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static inline vaddr cpu_untagged_addr(CPUState *cs, vaddr x)
+{
+    return x;
+}
+
+#else
+
 static inline vaddr cpu_untagged_addr(CPUState *cs, vaddr x)
 {
     const TCGCPUOps *tcg_ops = cs->cc->tcg_ops;
@@ -37,6 +46,8 @@ static inline vaddr cpu_untagged_addr(CPUState *cs, vaddr x)
     }
     return x;
 }
+
+#endif
 
 #ifdef CONFIG_JOVE_HELPERS
 
