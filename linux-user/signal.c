@@ -758,7 +758,16 @@ void force_sigsegv(int oldsig)
 }
 #endif
 
-#ifndef CONFIG_JOVE_HELPERS
+#ifdef CONFIG_JOVE_HELPERS
+
+void cpu_loop_exit_sigsegv(CPUState *cpu, vaddr addr,
+                           MMUAccessType access_type, bool maperr, uintptr_t ra)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
 
 void cpu_loop_exit_sigsegv(CPUState *cpu, vaddr addr,
                            MMUAccessType access_type, bool maperr, uintptr_t ra)
