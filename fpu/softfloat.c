@@ -158,16 +158,54 @@ void mulu64 (uint64_t *plow, uint64_t *phigh, uint64_t a, uint64_t b)
 
 #endif
 
-__attribute__((__nothrow__)) __attribute__((__noreturn__)) void
+#undef g_assert_not_reached
+#undef g_assertion_message_expr
+#undef __assert_fail
+
+extern __attribute__((__noreturn__)) void _jove_assert_fail(const char *file,
+                                                            unsigned line,
+                                                            void *retaddr);
+
+__attribute__((__nothrow__))
+__attribute__((__noreturn__))
+__attribute__((always_inline))
+void
 __assert_fail(const char *__assertion, const char *__file, unsigned int __line,
               const char *__function) {
-  for (;;);
+  _jove_assert_fail(__file, __line, __builtin_return_address (0u));
 }
 
-__attribute__((__noreturn__)) void
+__attribute__((__nothrow__))
+__attribute__((__noreturn__))
+__attribute__((always_inline))
+void
 g_assertion_message_expr(const char *domain, const char *file, int line,
                          const char *func, const char *expr) {
-  for (;;);
+  _jove_assert_fail(file, line, __builtin_return_address (0u));
+}
+
+#define g_assert_not_reached()                                                 \
+  do {                                                                         \
+    _jove_assert_fail(__FILE__, __LINE__, __builtin_return_address (0u));      \
+  } while (0)
+
+#undef memset
+#define memset __builtin_memset_inline
+
+#undef memcpy
+#define memcpy __builtin_memcpy_inline
+
+#undef fabs
+#define fabs jove_fabs
+static float jove_fabs(double x) {
+  return __builtin_fabs(x);
+}
+
+
+#undef fabsf
+#define fabsf jove_fabsf
+static float jove_fabsf(float x) {
+  return __builtin_fabsf(x);
 }
 
 #else
