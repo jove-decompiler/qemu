@@ -724,16 +724,21 @@ add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
 
 if get_option('jove_helpers')
-  add_global_arguments('-Xclang', '-load', \
-                       '-Xclang', '/usr/local/lib/libcarbon-collect.so', \
-                       '-Xclang', '-add-plugin', \
-                       '-Xclang', 'carbon-collect', \
-                       '-Xclang', '-plugin-arg-carbon-collect', \
-                       '-Xclang', meson.source_root(), \
-                       '-Xclang', '-plugin-arg-carbon-collect', \
-                       '-Xclang', meson.current_build_dir(), language : 'c')
-  add_global_arguments('-DG_DISABLE_ASSERT', language : 'c')
-  add_global_arguments('-DNDEBUG', language : 'c')
+  c_compiler = meson.get_compiler('c')
+  if compiler.get_id() == 'clang' and compiler.compiles('''
+      # if __clang_major__ != 19
+      #  error
+      # endif''')
+    add_global_arguments('-Xclang', '-load', \
+                         '-Xclang', '/usr/local/lib/libcarbon-collect-19.so', \
+                         '-Xclang', '-add-plugin', \
+                         '-Xclang', 'carbon-collect', \
+                         '-Xclang', '-plugin-arg-carbon-collect', \
+                         '-Xclang', meson.source_root(), \
+                         '-Xclang', '-plugin-arg-carbon-collect', \
+                         '-Xclang', meson.current_build_dir(), language : 'c')
+  endif
+  add_global_arguments('-mllvm', '-trap-unreachable', language : 'c')
 endif
 
 # Collect warning flags we want to set, sorted alphabetically
@@ -4427,7 +4432,7 @@ foreach target : target_dirs
                  build_by_default: false)
 
   libfpu_soft_c_args = c_args
-  libfpu_soft_c_args += ['-DJOVE_LIBFPU']
+  libfpu_soft_c_args += ['-DJOVE_LIBFPU', '-ffreestanding']
   fpu_soft = fpu_soft_ss.apply(config_target, strict: false)
   libfpu_soft = static_library('fpu_soft-' + target,
                  sources: fpu_soft.sources(),
