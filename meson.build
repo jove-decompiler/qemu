@@ -723,6 +723,11 @@ qemu_common_flags += cc.get_supported_arguments(hardening_flags)
 add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
 
+# if clang, force -fuse-ld=lld
+if meson.get_compiler('c').get_id() == 'clang'
+  add_project_arguments('-fuse-ld=lld', language: 'c')
+endif
+
 if get_option('jove_helpers')
   c_compiler = meson.get_compiler('c')
   if compiler.get_id() == 'clang' and compiler.compiles('''
