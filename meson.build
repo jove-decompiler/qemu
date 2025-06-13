@@ -3,6 +3,11 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
                           'b_staticpic=false', 'stdsplit=false', 'optimization=2', 'b_pie=true'],
         version: files('VERSION'))
 
+# if clang, force -fuse-ld=lld
+if meson.get_compiler('c').get_id() == 'clang'
+  add_project_arguments('-fuse-ld=lld', language: 'c')
+endif
+
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
 
 add_test_setup('quick', exclude_suites: ['slow', 'thorough'], is_default: true,
@@ -722,11 +727,6 @@ qemu_common_flags += cc.get_supported_arguments(hardening_flags)
 
 add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
-
-# if clang, force -fuse-ld=lld
-if meson.get_compiler('c').get_id() == 'clang'
-  add_project_arguments('-fuse-ld=lld', language: 'c')
-endif
 
 if get_option('jove_helpers')
   c_compiler = meson.get_compiler('c')
