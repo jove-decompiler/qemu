@@ -743,6 +743,7 @@ if get_option('jove_helpers')
                          '-Xclang', '-plugin-arg-carbon-collect', \
                          '-Xclang', meson.current_build_dir(), language : 'c')
   endif
+  add_global_arguments('-gdwarf-4', language : 'c')
   add_global_arguments('-mllvm', '-trap-unreachable', language : 'c')
 endif
 
