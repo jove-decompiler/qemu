@@ -12,13 +12,19 @@
 #include "exec/vaddr.h"
 #include "exec/memattrs.h"
 
-typedef struct CPUBreakpoint {
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define JOVE_MS_STRUCT __attribute__((ms_struct))
+#else
+#define JOVE_MS_STRUCT
+#endif
+
+typedef struct JOVE_MS_STRUCT CPUBreakpoint {
     vaddr pc;
     int flags; /* BP_* */
     QTAILQ_ENTRY(CPUBreakpoint) entry;
 } CPUBreakpoint;
 
-typedef struct CPUWatchpoint {
+typedef struct JOVE_MS_STRUCT CPUWatchpoint {
     vaddr vaddr_;
     vaddr len;
     vaddr hitaddr;

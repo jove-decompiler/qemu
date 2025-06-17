@@ -82,6 +82,12 @@ typedef enum X86Seg {
     R_TR = 7,
 } X86Seg;
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define JOVE_MS_STRUCT __attribute__((ms_struct))
+#else
+#define JOVE_MS_STRUCT
+#endif
+
 /* segment descriptor fields */
 #define DESC_G_SHIFT    23
 #define DESC_G_MASK     (1 << DESC_G_SHIFT)
@@ -1490,14 +1496,14 @@ static inline MemOp cc_op_size(CCOp op)
     return size;
 }
 
-typedef struct SegmentCache {
+typedef struct JOVE_MS_STRUCT SegmentCache {
     uint32_t selector;
     target_ulong base;
     uint32_t limit;
     uint32_t flags;
 } SegmentCache;
 
-typedef union MMXReg {
+typedef union JOVE_MS_STRUCT MMXReg {
     uint8_t  _b_MMXReg[64 / 8];
     uint16_t _w_MMXReg[64 / 16];
     uint32_t _l_MMXReg[64 / 32];
@@ -1506,16 +1512,16 @@ typedef union MMXReg {
     float64  _d_MMXReg[64 / 64];
 } MMXReg;
 
-typedef union XMMReg {
+typedef union JOVE_MS_STRUCT XMMReg {
     uint64_t _q_XMMReg[128 / 64];
 } XMMReg;
 
-typedef union YMMReg {
+typedef union JOVE_MS_STRUCT YMMReg {
     uint64_t _q_YMMReg[256 / 64];
     XMMReg   _x_YMMReg[256 / 128];
 } YMMReg;
 
-typedef union ZMMReg {
+typedef union JOVE_MS_STRUCT ZMMReg {
     uint8_t  _b_ZMMReg[512 / 8];
     uint16_t _w_ZMMReg[512 / 16];
     uint32_t _l_ZMMReg[512 / 32];
@@ -1527,12 +1533,12 @@ typedef union ZMMReg {
     YMMReg   _y_ZMMReg[512 / 256];
 } ZMMReg;
 
-typedef struct BNDReg {
+typedef struct JOVE_MS_STRUCT BNDReg {
     uint64_t lb;
     uint64_t ub;
 } BNDReg;
 
-typedef struct BNDCSReg {
+typedef struct JOVE_MS_STRUCT BNDCSReg {
     uint64_t cfgu;
     uint64_t sts;
 } BNDCSReg;
@@ -1584,12 +1590,12 @@ typedef struct BNDCSReg {
 #endif
 #define MMX_Q(n) _q_MMXReg[n]
 
-typedef union {
+typedef union JOVE_MS_STRUCT {
     floatx80 d __attribute__((aligned(16)));
     MMXReg mmx;
 } FPReg;
 
-typedef struct {
+typedef struct JOVE_MS_STRUCT {
     uint64_t base;
     uint64_t mask;
 } MTRRVar;
@@ -1613,7 +1619,7 @@ typedef struct {
  */
 #define UNASSIGNED_APIC_ID 0xFFFFFFFF
 
-typedef struct X86LegacyXSaveArea {
+typedef struct JOVE_MS_STRUCT X86LegacyXSaveArea {
     uint16_t fcw;
     uint16_t fsw;
     uint8_t ftw;
@@ -1641,7 +1647,7 @@ typedef struct X86LegacyXSaveArea {
 
 QEMU_BUILD_BUG_ON(sizeof(X86LegacyXSaveArea) != 512);
 
-typedef struct X86XSaveHeader {
+typedef struct JOVE_MS_STRUCT X86XSaveHeader {
     uint64_t xstate_bv;
     uint64_t xcomp_bv;
     uint64_t reserve0;
@@ -1649,49 +1655,49 @@ typedef struct X86XSaveHeader {
 } X86XSaveHeader;
 
 /* Ext. save area 2: AVX State */
-typedef struct XSaveAVX {
+typedef struct JOVE_MS_STRUCT XSaveAVX {
     uint8_t ymmh[16][16];
 } XSaveAVX;
 
 /* Ext. save area 3: BNDREG */
-typedef struct XSaveBNDREG {
+typedef struct JOVE_MS_STRUCT XSaveBNDREG {
     BNDReg bnd_regs[4];
 } XSaveBNDREG;
 
 /* Ext. save area 4: BNDCSR */
-typedef union XSaveBNDCSR {
+typedef union JOVE_MS_STRUCT XSaveBNDCSR {
     BNDCSReg bndcsr;
     uint8_t data[64];
 } XSaveBNDCSR;
 
 /* Ext. save area 5: Opmask */
-typedef struct XSaveOpmask {
+typedef struct JOVE_MS_STRUCT XSaveOpmask {
     uint64_t opmask_regs[NB_OPMASK_REGS];
 } XSaveOpmask;
 
 /* Ext. save area 6: ZMM_Hi256 */
-typedef struct XSaveZMM_Hi256 {
+typedef struct JOVE_MS_STRUCT XSaveZMM_Hi256 {
     uint8_t zmm_hi256[16][32];
 } XSaveZMM_Hi256;
 
 /* Ext. save area 7: Hi16_ZMM */
-typedef struct XSaveHi16_ZMM {
+typedef struct JOVE_MS_STRUCT XSaveHi16_ZMM {
     uint8_t hi16_zmm[16][64];
 } XSaveHi16_ZMM;
 
 /* Ext. save area 9: PKRU state */
-typedef struct XSavePKRU {
+typedef struct JOVE_MS_STRUCT XSavePKRU {
     uint32_t pkru;
     uint32_t padding;
 } XSavePKRU;
 
 /* Ext. save area 17: AMX XTILECFG state */
-typedef struct XSaveXTILECFG {
+typedef struct JOVE_MS_STRUCT XSaveXTILECFG {
     uint8_t xtilecfg[64];
 } XSaveXTILECFG;
 
 /* Ext. save area 18: AMX XTILEDATA state */
-typedef struct XSaveXTILEDATA {
+typedef struct JOVE_MS_STRUCT XSaveXTILEDATA {
     uint8_t xtiledata[8][1024];
 } XSaveXTILEDATA;
 
@@ -1704,7 +1710,7 @@ typedef struct {
 #define ARCH_LBR_NR_ENTRIES            32
 
 /* Ext. save area 19: Supervisor mode Arch LBR state */
-typedef struct XSavesArchLBR {
+typedef struct JOVE_MS_STRUCT XSavesArchLBR {
     uint64_t lbr_ctl;
     uint64_t lbr_depth;
     uint64_t ler_from;
@@ -1724,7 +1730,7 @@ QEMU_BUILD_BUG_ON(sizeof(XSaveXTILECFG) != 0x40);
 QEMU_BUILD_BUG_ON(sizeof(XSaveXTILEDATA) != 0x2000);
 QEMU_BUILD_BUG_ON(sizeof(XSavesArchLBR) != 0x328);
 
-typedef struct ExtSaveArea {
+typedef struct JOVE_MS_STRUCT ExtSaveArea {
     uint32_t feature, bits;
     uint32_t offset, size;
     uint32_t ecx;
@@ -1747,7 +1753,7 @@ enum CacheType {
     UNIFIED_CACHE
 };
 
-typedef struct CPUCacheInfo {
+typedef struct JOVE_MS_STRUCT CPUCacheInfo {
     enum CacheType type;
     uint8_t level;
     /* Size in bytes */
@@ -1798,14 +1804,14 @@ typedef struct CPUCacheInfo {
 } CPUCacheInfo;
 
 
-typedef struct CPUCaches {
+typedef struct JOVE_MS_STRUCT CPUCaches {
         CPUCacheInfo *l1d_cache;
         CPUCacheInfo *l1i_cache;
         CPUCacheInfo *l2_cache;
         CPUCacheInfo *l3_cache;
 } CPUCaches;
 
-typedef struct CPUArchState {
+typedef struct JOVE_MS_STRUCT CPUArchState {
     /* standard registers */
     target_ulong regs[CPU_NB_REGS];
     target_ulong eip;
