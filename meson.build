@@ -4438,7 +4438,7 @@ foreach target : target_dirs
                  build_by_default: false)
 
   libfpu_soft_c_args = c_args
-  libfpu_soft_c_args += ['-DJOVE_LIBFPU', '-ffreestanding']
+  libfpu_soft_c_args += ['-DJOVE_LIBFPU', '-ffreestanding', '-nostdlib']
   fpu_soft = fpu_soft_ss.apply(config_target, strict: false)
   libfpu_soft = static_library('fpu_soft-' + target,
                  sources: fpu_soft.sources(),
