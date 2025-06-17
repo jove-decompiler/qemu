@@ -7,6 +7,9 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
 if meson.get_compiler('c').get_id() == 'clang'
   add_project_arguments('-fuse-ld=lld', language: 'c')
 endif
+if get_option('jove_helpers_win')
+  add_project_arguments('-mms-bitfields', language: 'c')
+endif
 
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
 

@@ -40,6 +40,8 @@ option('jove', type: 'boolean', value: false,
        description: 'build for jove')
 option('jove_helpers', type: 'boolean', value: false,
        description: 'build for jove (helpers)')
+option('jove_helpers_win', type: 'boolean', value: false,
+       description: 'build for jove (helpers) (win)')
 
 # Everything else can be set via --enable/--disable-* option
 # on the configure script command line.  After adding an option
