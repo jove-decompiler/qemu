@@ -38,6 +38,10 @@ meson_options_help() {
   printf "%s\n" '                           (choices: auto/disabled/enabled/internal/system)'
   printf "%s\n" '  --enable-fuzzing         build fuzzing targets'
   printf "%s\n" '  --enable-gcov            Enable coverage tracking.'
+  printf "%s\n" '  --enable-jove            build for jove'
+  printf "%s\n" '  --enable-jove-helpers    build for jove (helpers)'
+  printf "%s\n" '  --enable-jove-helpers-win'
+  printf "%s\n" '                           build for jove (helpers) (win)'
   printf "%s\n" '  --enable-lto             Use link time optimization'
   printf "%s\n" '  --enable-malloc=CHOICE   choose memory allocator to use [system] (choices:'
   printf "%s\n" '                           jemalloc/system/tcmalloc)'
@@ -51,8 +55,6 @@ meson_options_help() {
   printf "%s\n" '                           Enable stricter set of Rust warnings'
   printf "%s\n" '  --enable-strip           Strip targets on install'
   printf "%s\n" '  --enable-tcg-interpreter TCG with bytecode interpreter (slow)'
-  printf "%s\n" '  --enable-jove            build for jove'
-  printf "%s\n" '  --enable-jove-helpers    build for jove (helpers)'
   printf "%s\n" '  --enable-trace-backends=CHOICES'
   printf "%s\n" '                           Set available tracing backends [log] (choices:'
   printf "%s\n" '                           dtrace/ftrace/log/nop/simple/syslog/ust)'
@@ -82,7 +84,7 @@ meson_options_help() {
   printf "%s\n" '  --tls-priority=VALUE     Default TLS protocol/cipher priority string'
   printf "%s\n" '                           [NORMAL]'
   printf "%s\n" '  --with-coroutine=CHOICE  coroutine backend to use (choices:'
-  printf "%s\n" '                           auto/sigaltstack/ucontext/windows/wasm)'
+  printf "%s\n" '                           auto/sigaltstack/ucontext/wasm/windows)'
   printf "%s\n" '  --with-pkgversion=VALUE  use specified string as sub-version of the'
   printf "%s\n" '                           package'
   printf "%s\n" '  --with-suffix=VALUE      Suffix for QEMU data/modules/config directories'
@@ -358,6 +360,8 @@ _meson_option_parse() {
     --disable-jove) printf "%s" -Djove=false ;;
     --enable-jove-helpers) printf "%s" -Djove_helpers=true ;;
     --disable-jove-helpers) printf "%s" -Djove_helpers=false ;;
+    --enable-jove-helpers-win) printf "%s" -Djove_helpers_win=true ;;
+    --disable-jove-helpers-win) printf "%s" -Djove_helpers_win=false ;;
     --enable-keyring) printf "%s" -Dkeyring=enabled ;;
     --disable-keyring) printf "%s" -Dkeyring=disabled ;;
     --enable-kvm) printf "%s" -Dkvm=enabled ;;
