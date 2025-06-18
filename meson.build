@@ -8,6 +8,10 @@ if meson.get_compiler('c').get_id() == 'clang'
   add_project_arguments('-fuse-ld=lld', language: 'c')
 endif
 
+if get_option('ms_bitfields')
+  add_project_arguments('-mms-bitfields', language: 'c')
+endif
+
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
 
 add_test_setup('quick', exclude_suites: ['slow', 'thorough'], is_default: true,
