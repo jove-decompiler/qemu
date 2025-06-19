@@ -1473,6 +1473,7 @@ static void do_gen_rep(DisasContext *s, MemOp ot, TCGv dshift,
 
 #ifdef CONFIG_JOVE
     jv_term_is_cond_jump((s->pc -cur_insn_len(s)) - s->cs_base, s->pc - s->cs_base);
+    jv_term_is_string_op();
 #endif
 }
 
