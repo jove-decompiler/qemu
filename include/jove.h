@@ -48,6 +48,11 @@ JV_FUNC_ATTR void jv_set_end_pc(uint64_t);
 
 JV_FUNC_ATTR void jv_illegal_op(uint64_t PC);
 
+//
+// x86 specific
+//
+JV_FUNC_ATTR void jv_term_is_string_op(void);
+
 #ifdef __cplusplus
 }
 #endif
