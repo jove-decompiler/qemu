@@ -1077,6 +1077,17 @@ int main(int argc, char **argv, char **envp)
 
     target_cpu_copy_regs(env, regs);
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#if defined(TARGET_X86_64) || defined(TARGET_I386)
+extern void cpu_init_fp_statuses(CPUX86State * env);
+extern void jove_x86_do_cpu_reset(CPUX86State *env);
+extern void x86_cpu_exec_enter(CPUState *cs);
+    cpu_init_fp_statuses(env);
+    jove_x86_do_cpu_reset(env);
+    x86_cpu_exec_enter(cpu);
+#endif
+#endif
+
 #ifdef CONFIG_JOVE_HELPERS
     if (getenv("JOVE_PRINT_HELPERS"))
       _jove_print_helpers();

@@ -7492,6 +7492,98 @@ static bool cpuid_has_xsave_feature(CPUX86State *env, const ExtSaveArea *esa)
     return false;
 }
 
+void jove_x86_do_cpu_reset(CPUX86State *env) {
+    int i;
+    uint64_t xcr0;
+    target_ulong cr4;
+
+    env->old_exception = -1;
+
+    /* init to reset state */
+    env->int_ctl = 0;
+    env->hflags2 |= HF2_GIF_MASK;
+    env->hflags2 |= HF2_VGIF_MASK;
+    env->hflags &= ~HF_GUEST_MASK;
+
+    cpu_x86_update_cr0(env, 0x60000010);
+    env->a20_mask = ~0x0;
+    env->smbase = 0x30000;
+    env->msr_smi_count = 0;
+
+    env->idt.limit = 0xffff;
+    env->gdt.limit = 0xffff;
+    env->ldt.limit = 0xffff;
+    env->ldt.flags = DESC_P_MASK | (2 << DESC_TYPE_SHIFT);
+    env->tr.limit = 0xffff;
+    env->tr.flags = DESC_P_MASK | (11 << DESC_TYPE_SHIFT);
+    env->eip = 0xfff0;
+    env->regs[R_EDX] = env->cpuid_version;
+
+    env->eflags = 0x2;
+
+    /* FPU init */
+    for (i = 0; i < 8; i++) {
+        env->fptags[i] = 1;
+    }
+    cpu_set_fpuc(env, 0x37f);
+
+    env->mxcsr = 0x1f80;
+    /* All units are in INIT state.  */
+    env->xstate_bv = 0;
+
+    env->pat = 0x0007040600070406ULL;
+
+    if (kvm_enabled()) {
+        /*
+         * KVM handles TSC = 0 specially and thinks we are hot-plugging
+         * a new CPU, use 1 instead to force a reset.
+         */
+        if (env->tsc != 0) {
+            env->tsc = 1;
+        }
+    } else {
+        env->tsc = 0;
+    }
+
+    env->msr_ia32_misc_enable = MSR_IA32_MISC_ENABLE_DEFAULT;
+    if (env->features[FEAT_1_ECX] & CPUID_EXT_MONITOR) {
+        env->msr_ia32_misc_enable |= MSR_IA32_MISC_ENABLE_MWAIT;
+    }
+
+    memset(env->dr, 0, sizeof(env->dr));
+    env->dr[6] = DR6_FIXED_1;
+    env->dr[7] = DR7_FIXED_1;
+
+    cr4 = 0;
+    xcr0 = XSTATE_FP_MASK;
+
+#ifdef CONFIG_USER_ONLY
+    /* Enable all the features for user-mode.  */
+    if (env->features[FEAT_1_EDX] & CPUID_SSE) {
+        xcr0 |= XSTATE_SSE_MASK;
+    }
+    for (i = 2; i < ARRAY_SIZE(x86_ext_save_areas); i++) {
+        const ExtSaveArea *esa = &x86_ext_save_areas[i];
+        if (!((1 << i) & CPUID_XSTATE_XCR0_MASK)) {
+            continue;
+        }
+        if (cpuid_has_xsave_feature(env, esa)) {
+            xcr0 |= 1ull << i;
+        }
+    }
+
+    if (env->features[FEAT_1_ECX] & CPUID_EXT_XSAVE) {
+        cr4 |= CR4_OSFXSR_MASK | CR4_OSXSAVE_MASK;
+    }
+    if (env->features[FEAT_7_0_EBX] & CPUID_7_0_EBX_FSGSBASE) {
+        cr4 |= CR4_FSGSBASE_MASK;
+    }
+#endif
+
+    env->xcr0 = xcr0;
+    cpu_x86_update_cr4(env, cr4);
+}
+
 static void x86_cpu_reset_hold(Object *obj, ResetType type)
 {
     CPUState *cs = CPU(obj);
