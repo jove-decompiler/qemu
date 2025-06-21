@@ -7499,26 +7499,6 @@ void jove_x86_do_cpu_reset(CPUX86State *env) {
 
     env->old_exception = -1;
 
-    /* init to reset state */
-    env->int_ctl = 0;
-    env->hflags2 |= HF2_GIF_MASK;
-    env->hflags2 |= HF2_VGIF_MASK;
-    env->hflags &= ~HF_GUEST_MASK;
-
-    cpu_x86_update_cr0(env, 0x60000010);
-    env->a20_mask = ~0x0;
-    env->smbase = 0x30000;
-    env->msr_smi_count = 0;
-
-    env->idt.limit = 0xffff;
-    env->gdt.limit = 0xffff;
-    env->ldt.limit = 0xffff;
-    env->ldt.flags = DESC_P_MASK | (2 << DESC_TYPE_SHIFT);
-    env->tr.limit = 0xffff;
-    env->tr.flags = DESC_P_MASK | (11 << DESC_TYPE_SHIFT);
-    env->eip = 0xfff0;
-    env->regs[R_EDX] = env->cpuid_version;
-
     env->eflags = 0x2;
 
     /* FPU init */
@@ -7533,17 +7513,7 @@ void jove_x86_do_cpu_reset(CPUX86State *env) {
 
     env->pat = 0x0007040600070406ULL;
 
-    if (kvm_enabled()) {
-        /*
-         * KVM handles TSC = 0 specially and thinks we are hot-plugging
-         * a new CPU, use 1 instead to force a reset.
-         */
-        if (env->tsc != 0) {
-            env->tsc = 1;
-        }
-    } else {
-        env->tsc = 0;
-    }
+    env->tsc = 0;
 
     env->msr_ia32_misc_enable = MSR_IA32_MISC_ENABLE_DEFAULT;
     if (env->features[FEAT_1_ECX] & CPUID_EXT_MONITOR) {
