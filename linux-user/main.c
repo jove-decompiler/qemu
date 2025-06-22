@@ -1144,6 +1144,7 @@ void _jove_print_tcg_constants(void) {
       {"stack_pointer", "esp"},
       {"fs_base", "fs_base"},
       {"gs_base", "gs_base"},
+      {"eax", "eax"},
 #elif defined(TARGET_MIPS64)
       {"program_counter", "PC"},
       {"frame_pointer", "s8"},
