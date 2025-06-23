@@ -815,7 +815,7 @@ int main(int argc, char **argv, char **envp)
     errno = 0;
     execfd = qemu_getauxval(AT_EXECFD);
     if (errno != 0) {
-        execfd = open(exec_path, O_RDONLY);
+        execfd = open(exec_path, O_RDONLY | O_CLOEXEC);
         if (execfd < 0) {
             printf("Error while loading %s: %s\n", exec_path, strerror(errno));
             _exit(EXIT_FAILURE);
