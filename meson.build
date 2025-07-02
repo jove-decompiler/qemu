@@ -734,7 +734,7 @@ add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
 
 if get_option('jove_helpers')
   c_compiler = meson.get_compiler('c')
-  if compiler.get_id() == 'clang' and compiler.compiles('''
+  if c_compiler.get_id() == 'clang' and c_compiler.compiles('''
       # if __clang_major__ != 19
       #  error
       # endif''')
