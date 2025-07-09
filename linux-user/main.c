@@ -700,7 +700,7 @@ static int parse_args(int argc, char **argv)
 #ifdef CONFIG_JOVE_HELPERS
 static void _jove_print_tcg_constants(void);
 static void _jove_print_helpers(void);
-static void _jove_dump_env(CPUArchState *);
+void _jove_dump_env(CPUArchState *);
 #endif
 
 #ifdef CONFIG_JOVE
@@ -1077,28 +1077,18 @@ int main(int argc, char **argv, char **envp)
 
     target_cpu_copy_regs(env, regs);
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
-#if defined(TARGET_X86_64) || defined(TARGET_I386)
-extern void cpu_init_fp_statuses(CPUX86State * env);
-extern void jove_x86_do_cpu_reset(CPUX86State *env);
-extern void x86_cpu_exec_enter(CPUState *cs);
-    cpu_init_fp_statuses(env);
-    jove_x86_do_cpu_reset(env);
-    x86_cpu_exec_enter(cpu);
-#endif
-#endif
-
 #ifdef CONFIG_JOVE_HELPERS
-    if (getenv("JOVE_PRINT_HELPERS"))
+    if (getenv("JOVE_PRINT_HELPERS")) {
       _jove_print_helpers();
-    else if (getenv("JOVE_PRINT_CONSTANTS"))
+      exit(EXIT_SUCCESS);
+    } else if (getenv("JOVE_PRINT_CONSTANTS")) {
       _jove_print_tcg_constants();
-    else if (getenv("JOVE_DUMP_ENV"))
-      _jove_dump_env(env);
-    else
+      exit(EXIT_SUCCESS);
+    } else if (getenv("JOVE_DUMP_ENV")) {
+      ; /* we dump on the first call to tcg_qemu_tb_exec() */
+    } else {
       exit(EXIT_FAILURE);
-
-    exit(EXIT_SUCCESS);
+    }
 #endif
 
     if (gdbstub) {
