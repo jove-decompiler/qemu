@@ -29,7 +29,7 @@
 
 /* Frob eflags into and out of the CPU temporary format.  */
 
-void x86_cpu_exec_enter(CPUState *cs)
+static void x86_cpu_exec_enter(CPUState *cs)
 {
     X86CPU *cpu = X86_CPU(cs);
     CPUX86State *env = &cpu->env;
