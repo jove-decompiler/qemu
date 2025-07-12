@@ -12,6 +12,10 @@
 #include "user/guest-base.h"
 #include "accel/tcg/cpu-ops.h"
 
+#ifdef CONFIG_JOVE
+void *_jv_g2h(uint64_t Addr);
+#endif
+
 /*
  * If non-zero, the guest virtual address space is a contiguous subset
  * of the host virtual address space, i.e. '-R reserved_va' is in effect
@@ -59,10 +63,6 @@ static inline void *g2h_untagged(vaddr x)
 
 #else
 
-#ifdef CONFIG_JOVE
-void *_jv_g2h(uint64_t Addr);
-#endif
-
 static inline void *g2h_untagged(vaddr x)
 {
 #ifdef CONFIG_JOVE
@@ -98,12 +98,18 @@ static inline bool guest_range_valid_untagged(vaddr start, vaddr len)
 
 #define h2g_nocheck(x) ({ \
     uintptr_t __ret = (uintptr_t)(x); \
-    (abi_ptr)__ret; \
+    (vaddr)__ret; \
 })
 
-#define h2g(x) ({ h2g_nocheck(x); })
+#else /* !CONFIG_JOVE_HELPERS */
 
-#else
+#ifdef CONFIG_JOVE
+
+#define h2g_valid(x) true
+
+#define h2g_nocheck(x) ((vaddr)x)
+
+#else /* !CONFIG_JOVE */
 
 #define h2g_valid(x) \
     ((uintptr_t)(x) - guest_base <= guest_addr_max)
@@ -113,12 +119,14 @@ static inline bool guest_range_valid_untagged(vaddr start, vaddr len)
     (vaddr)__ret; \
 })
 
+#endif /* CONFIG_JOVE */
+
+#endif /* CONFIG_JOVE_HELPERS */
+
 #define h2g(x) ({ \
     /* Check if given address fits target address space */ \
     assert(h2g_valid(x)); \
     h2g_nocheck(x); \
 })
-
-#endif /* CONFIG_JOVE_HELPERS */
 
 #endif
