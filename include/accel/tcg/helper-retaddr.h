@@ -13,7 +13,7 @@
  * which another thread unmaps the page between a probe and the
  * actual access.
  */
-#ifdef CONFIG_USER_ONLY
+#if defined(CONFIG_USER_ONLY) && !defined(CONFIG_JOVE_HELPERS)
 extern __thread uintptr_t helper_retaddr;
 
 static inline void set_helper_retaddr(uintptr_t ra)
