@@ -22,12 +22,6 @@ typedef struct X86Access {
 } X86Access;
 
 #ifdef CONFIG_JOVE_HELPERS
-static inline void access_prepare_mmu(X86Access *ret, CPUX86State *env,
-                        vaddr vaddr, unsigned size,
-                        MMUAccessType type, int mmu_idx, uintptr_t ra) {}
-static inline void access_prepare(X86Access *ret, CPUX86State *env, vaddr vaddr,
-                    unsigned size, MMUAccessType type, uintptr_t ra) {}
-
 static inline uint8_t access_ldb(X86Access *ac, vaddr addr) {
   return ldub_p((void *)addr);
 }
@@ -53,13 +47,15 @@ static inline void access_stl(X86Access *ac, vaddr addr, uint32_t val) {
 static inline void access_stq(X86Access *ac, vaddr addr, uint64_t val) {
   stq_le_p((void *)addr, val);
 }
-#else
+#endif
+
 void access_prepare_mmu(X86Access *ret, CPUX86State *env,
                         vaddr vaddr, unsigned size,
                         MMUAccessType type, int mmu_idx, uintptr_t ra);
 void access_prepare(X86Access *ret, CPUX86State *env, vaddr vaddr,
                     unsigned size, MMUAccessType type, uintptr_t ra);
 
+#ifndef CONFIG_JOVE_HELPERS
 uint8_t  access_ldb(X86Access *ac, vaddr addr);
 uint16_t access_ldw(X86Access *ac, vaddr addr);
 uint32_t access_ldl(X86Access *ac, vaddr addr);
