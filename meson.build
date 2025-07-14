@@ -3856,6 +3856,9 @@ specific_ss.add(files('cpu-target.c'))
 
 subdir('system')
 
+if meson.get_compiler('c').get_id() == 'clang'
+common_ss.add(files('page-vary-common.c'))
+else
 # Work around a gcc bug/misfeature wherein constant propagation looks
 # through an alias:
 #   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=99696
@@ -3875,6 +3878,7 @@ if get_option('b_lto')
   pagevary = declare_dependency(link_with: pagevary)
 endif
 common_ss.add(pagevary)
+endif
 specific_ss.add(files('page-target.c', 'page-vary-target.c'))
 
 common_ss.add(files('target-info.c'))
