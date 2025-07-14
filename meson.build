@@ -4519,6 +4519,16 @@ foreach target : target_dirs
                link_depends: [block_syms, qemu_syms],
                link_args: link_args + ['-latomic'],
                win_subsystem: exe['win_subsystem'])
+    if get_option('jove_helpers')
+    emulator_bitcode = executable(exe_name + '.bitcode', exe['sources'],
+               install: true,
+               c_args: c_args,
+               dependencies: arch_deps + exe['dependencies'],
+               objects: lib.extract_all_objects(recursive: true),
+               link_depends: [block_syms, qemu_syms],
+               link_args: link_args + ['-Wl,-plugin-opt=emit-llvm'],
+               win_subsystem: exe['win_subsystem'])
+    endif
     endif
 
     if host_os == 'darwin'
