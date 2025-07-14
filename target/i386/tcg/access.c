@@ -9,8 +9,6 @@
 #include "access.h"
 
 
-#ifndef CONFIG_JOVE_HELPERS
-
 void access_prepare_mmu(X86Access *ret, CPUX86State *env,
                         vaddr vaddr, unsigned size,
                         MMUAccessType type, int mmu_idx, uintptr_t ra)
@@ -54,6 +52,8 @@ void access_prepare(X86Access *ret, CPUX86State *env, vaddr vaddr,
     int mmu_idx = cpu_mmu_index(env_cpu(env), false);
     access_prepare_mmu(ret, env, vaddr, size, type, mmu_idx, ra);
 }
+
+#ifndef CONFIG_JOVE_HELPERS
 
 static void *access_ptr(X86Access *ac, vaddr addr, unsigned len)
 {
