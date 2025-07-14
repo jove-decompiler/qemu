@@ -73,6 +73,15 @@
 #define floatx80_ln2_d make_floatx80(0x3ffe, 0xb17217f7d1cf79abLL)
 #define floatx80_pi_d make_floatx80(0x4000, 0xc90fdaa22168c234LL)
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memset __builtin_memset
+#define abort jove_abort
+static void jove_abort(void) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+#endif
+
 static inline void fpush(CPUX86State *env)
 {
     env->fpstt = (env->fpstt - 1) & 7;
@@ -1296,7 +1305,46 @@ void helper_f2xm1(CPUX86State *env)
 }
 
 #ifdef CONFIG_JOVE_HELPERS
-double _jove_tan(double);
+
+#define CONST_PI  3.14159265358979323846264338327950288419716939937510
+
+static
+double cos_taylor_running_10terms(double x)
+{
+    int div = (int)(x / CONST_PI);
+    x = x - (div * CONST_PI);
+    char sign = 1;
+    if (div % 2 != 0)
+        sign = -1;
+
+    double result = 1.0;
+    double inter = 1.0;
+    double num = x * x;
+    for (int i = 1; i <= 10; i++)
+    {
+        double comp = 2.0 * i;
+        double den = comp * (comp - 1.0);
+        inter *= num / den;
+        if (i % 2 == 0)
+            result += inter;
+        else
+            result -= inter;
+    }
+    return sign * result;
+}
+
+static double _jove_cos(double x) {
+  return cos_taylor_running_10terms(x);
+}
+
+static double _jove_sin(double x) {
+  return _jove_cos(CONST_PI / 2.0 - x);
+}
+
+static double _jove_tan(double x) {
+  return _jove_sin(x) / _jove_cos(x);
+}
+
 #define tan _jove_tan
 #endif
 
@@ -2394,7 +2442,6 @@ void helper_fscale(CPUX86State *env)
 }
 
 #ifdef CONFIG_JOVE_HELPERS
-double _jove_sin(double);
 #define sin _jove_sin
 #endif
 
@@ -2420,7 +2467,6 @@ void helper_fsin(CPUX86State *env)
 #endif
 
 #ifdef CONFIG_JOVE_HELPERS
-double _jove_cos(double);
 #define cos _jove_cos
 #endif
 
@@ -2435,10 +2481,6 @@ void helper_fcos(CPUX86State *env)
         env->fpus &= ~0x400;  /* C2 <-- 0 */
         /* the above code is for |arg| < 2**63 only */
     }
-
-#ifdef CONFIG_JOVE_HELPERS
-#include "jove_help_cos.c.inc"
-#endif
 }
 
 #ifdef CONFIG_JOVE_HELPERS
@@ -3033,10 +3075,6 @@ static bool valid_xrstor_header(X86Access *ac, uint64_t *pxsbv,
     /* The XSTATE_BV field must not set bits not present in XCR0.  */
     return (xstate_bv & ~ac->env->xcr0) == 0;
 }
- 
-#ifdef CONFIG_JOVE_HELPERS
-#define memset __builtin_memset
-#endif
 
 static void do_xrstor(X86Access *ac, target_ulong ptr,
                       uint64_t rfbm, uint64_t xstate_bv)
