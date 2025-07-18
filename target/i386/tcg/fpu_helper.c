@@ -1306,6 +1306,21 @@ void helper_f2xm1(CPUX86State *env)
 
 #ifdef CONFIG_JOVE_HELPERS
 
+#ifdef __i386__
+
+static double _jove_cos(double x) {
+  double the_cos;
+  asm("fcos" : "=t"(the_cos) : "0"(x));
+  return the_cos;
+}
+static double _jove_sin(double x) {
+  double the_sin;
+  asm("fsin" : "=t"(the_sin) : "0"(x));
+  return the_sin;
+}
+
+#else
+
 #define CONST_PI  3.14159265358979323846264338327950288419716939937510
 
 static
@@ -1336,10 +1351,11 @@ double cos_taylor_running_10terms(double x)
 static double _jove_cos(double x) {
   return cos_taylor_running_10terms(x);
 }
-
 static double _jove_sin(double x) {
   return _jove_cos(CONST_PI / 2.0 - x);
 }
+
+#endif
 
 static double _jove_tan(double x) {
   return _jove_sin(x) / _jove_cos(x);
@@ -1362,10 +1378,6 @@ void helper_fptan(CPUX86State *env)
         env->fpus &= ~0x400; /* C2 <-- 0 */
         /* the above code is for |arg| < 2**52 only */
     }
-
-#ifdef CONFIG_JOVE_HELPERS
-#include "jove_help_tan.c.inc"
-#endif
 }
 
 #ifdef CONFIG_JOVE_HELPERS
@@ -2456,10 +2468,6 @@ void helper_fsin(CPUX86State *env)
         env->fpus &= ~0x400;  /* C2 <-- 0 */
         /* the above code is for |arg| < 2**53 only */
     }
-
-#ifdef CONFIG_JOVE_HELPERS
-#include "jove_help_sin.c.inc"
-#endif
 }
 
 #ifdef CONFIG_JOVE_HELPERS
