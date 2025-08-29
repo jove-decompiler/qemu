@@ -49,6 +49,10 @@
         }                         \
     } while (0)
 
+#elif defined(CONFIG_JOVE)
+
+#define cpu_req_mo(cpu, type) do {} while (false)
+
 #else
 
 #define cpu_req_mo(cpu, type)     \
