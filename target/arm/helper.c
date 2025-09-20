@@ -9788,6 +9788,10 @@ static uint32_t sve_vqm1_for_el_sm_ena(CPUARMState *env, int el, bool sm)
     return sve_vqm1_for_el_sm(env, el, sm);
 }
 
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#include "linux_aarch64_crc32.c"
+#endif
+
 /*
  * Notice a change in SVE vector size when changing EL.
  */

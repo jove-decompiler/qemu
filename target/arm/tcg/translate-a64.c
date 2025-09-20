@@ -25,6 +25,10 @@
 #include "semihosting/semihost.h"
 #include "cpregs.h"
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
 static TCGv_i64 cpu_X[32];
 static TCGv_i64 cpu_pc;
 
@@ -81,7 +85,7 @@ void a64_translate_init(void)
 
     cpu_pc = tcg_global_mem_new_i64(tcg_env,
                                     offsetof(CPUARMState, pc),
-                                    "pc");
+                                    "PC");
     for (i = 0; i < 32; i++) {
         cpu_X[i] = tcg_global_mem_new_i64(tcg_env,
                                           offsetof(CPUARMState, xregs[i]),
@@ -1635,6 +1639,9 @@ static inline void gen_check_sp_alignment(DisasContext *s)
 
 static bool trans_B(DisasContext *s, arg_i *a)
 {
+#ifdef CONFIG_JOVE
+    jv_term_is_uncond_jump(s->pc_curr + a->imm);
+#endif
     reset_btype(s);
     gen_goto_tb(s, 0, a->imm);
     return true;
@@ -1642,6 +1649,9 @@ static bool trans_B(DisasContext *s, arg_i *a)
 
 static bool trans_BL(DisasContext *s, arg_i *a)
 {
+#ifdef CONFIG_JOVE
+    jv_term_is_call(s->pc_curr + a->imm, s->pc_curr + curr_insn_len(s));
+#endif
     gen_pc_plus_diff(s, cpu_reg(s, 30), curr_insn_len(s));
     reset_btype(s);
     gen_goto_tb(s, 0, a->imm);
@@ -1651,6 +1661,9 @@ static bool trans_BL(DisasContext *s, arg_i *a)
 
 static bool trans_CBZ(DisasContext *s, arg_cbz *a)
 {
+#ifdef CONFIG_JOVE
+    jv_term_is_cond_jump(s->pc_curr + a->imm, s->pc_curr + 4);
+#endif
     DisasLabel match;
     TCGv_i64 tcg_cmp;
 
@@ -1668,6 +1681,9 @@ static bool trans_CBZ(DisasContext *s, arg_cbz *a)
 
 static bool trans_TBZ(DisasContext *s, arg_tbz *a)
 {
+#ifdef CONFIG_JOVE
+    jv_term_is_cond_jump(s->pc_curr + a->imm, s->pc_curr + 4);
+#endif
     DisasLabel match;
     TCGv_i64 tcg_cmp;
 
@@ -1694,6 +1710,9 @@ static bool trans_B_cond(DisasContext *s, arg_B_cond *a)
     reset_btype(s);
     if (a->cond < 0x0e) {
         /* genuinely conditional branches */
+#ifdef CONFIG_JOVE
+        jv_term_is_cond_jump(s->pc_curr + a->imm, s->pc_curr + 4);
+#endif
         DisasLabel match = gen_disas_label(s);
         arm_gen_test_cc(a->cond, match.label);
         gen_goto_tb(s, 0, 4);
@@ -1701,6 +1720,9 @@ static bool trans_B_cond(DisasContext *s, arg_B_cond *a)
         gen_goto_tb(s, 1, a->imm);
     } else {
         /* 0xe and 0xf are both "always" conditions */
+#ifdef CONFIG_JOVE
+        jv_term_is_uncond_jump(s->pc_curr + a->imm);
+#endif
         gen_goto_tb(s, 0, a->imm);
     }
     return true;
@@ -1731,6 +1753,12 @@ static void set_btype_for_blr(DisasContext *s)
 
 static bool trans_BR(DisasContext *s, arg_r *a)
 {
+#ifdef CONFIG_JOVE
+    if (a->rn == 30 /* lr */)
+        jv_term_is_return();
+    else
+        jv_term_is_ind_jump();
+#endif
     set_btype_for_br(s, a->rn);
     gen_a64_set_pc(s, cpu_reg(s, a->rn));
     s->base.is_jmp = DISAS_JUMP;
@@ -1739,6 +1767,9 @@ static bool trans_BR(DisasContext *s, arg_r *a)
 
 static bool trans_BLR(DisasContext *s, arg_r *a)
 {
+#ifdef CONFIG_JOVE
+    jv_term_is_ind_call(s->pc_curr + curr_insn_len(s));
+#endif
     TCGv_i64 dst = cpu_reg(s, a->rn);
     TCGv_i64 lr = cpu_reg(s, 30);
     if (dst == lr) {
@@ -1755,6 +1786,9 @@ static bool trans_BLR(DisasContext *s, arg_r *a)
 
 static bool trans_RET(DisasContext *s, arg_r *a)
 {
+#ifdef CONFIG_JOVE
+    jv_term_is_return();
+#endif
     gen_a64_set_pc(s, cpu_reg(s, a->rn));
     s->base.is_jmp = DISAS_JUMP;
     return true;
@@ -1812,6 +1846,9 @@ static bool trans_BLRAZ(DisasContext *s, arg_braz *a)
         tcg_gen_mov_i64(tmp, dst);
         dst = tmp;
     }
+#ifdef CONFIG_JOVE
+    tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
     gen_pc_plus_diff(s, lr, curr_insn_len(s));
     gen_a64_set_pc(s, dst);
     set_btype_for_blr(s);
@@ -4579,12 +4616,20 @@ static bool gen_rri(DisasContext *s, arg_rri_sf *a,
 
 static bool trans_ADR(DisasContext *s, arg_ri *a)
 {
+#ifdef CONFIG_JOVE
+    tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
+
     gen_pc_plus_diff(s, cpu_reg(s, a->rd), a->imm);
     return true;
 }
 
 static bool trans_ADRP(DisasContext *s, arg_ri *a)
 {
+#ifdef CONFIG_JOVE
+    tcg_gen_insn_start(JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC, JOVE_PCREL_MAGIC);
+#endif
+
     int64_t offset = (int64_t)a->imm << 12;
 
     /* The page offset is ok for CF_PCREL. */

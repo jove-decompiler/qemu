@@ -467,6 +467,20 @@ Int128 int128_divu(Int128, Int128);
 Int128 int128_remu(Int128, Int128);
 Int128 int128_divs(Int128, Int128);
 Int128 int128_rems(Int128, Int128);
+
+#if defined(CONFIG_INT128) && defined(__clang__)
+static inline __int128_t int128_to_raw(Int128 a)
+{
+    return ((__int128_t)(uint64_t)int128_gethi(a) << 64) | int128_getlo(a);
+}
+
+static inline Int128 int128_from_raw(__int128_t raw)
+{
+    return int128_make128((uint64_t)raw,
+                          (uint64_t)((unsigned __int128)raw >> 64));
+}
+#endif
+
 #endif /* CONFIG_INT128 && !CONFIG_TCG_INTERPRETER */
 
 static inline void bswap128s(Int128 *s)

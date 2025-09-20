@@ -62,6 +62,10 @@
 #include "semihosting/semihost.h"
 #endif
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
 #ifndef AT_FLAGS_PRESERVE_ARGV0
 #define AT_FLAGS_PRESERVE_ARGV0_BIT 0
 #define AT_FLAGS_PRESERVE_ARGV0 (1 << AT_FLAGS_PRESERVE_ARGV0_BIT)
@@ -677,8 +681,39 @@ static int parse_args(int argc, char **argv)
     return optind;
 }
 
+
+#ifdef CONFIG_JOVE_HELPERS
+static void _jove_print_tcg_constants(void);
+void _jove_dump_env(CPUArchState *);
+#endif
+
+#ifdef CONFIG_JOVE
+CPUState *jv_cpu = NULL;
+bool jv_is_mips_target =
+#ifdef TARGET_MIPS
+    true
+#else
+    false
+#endif
+    ;
+
+static void _jove_check_did(const bool *did) {
+  if (!(*did)) {
+    printf("(BUG) !_jove_check_did\n");
+    _exit(EXIT_FAILURE);
+  }
+}
+
+int jv_init_libqemu(const char *_binpath)
+#else
 int main(int argc, char **argv, char **envp)
+#endif
 {
+#ifdef CONFIG_JOVE
+    int argc = 2;
+    char *argv[] = {(char *)"", (char *)_binpath, NULL};
+    bool __jove_did __attribute__((cleanup(_jove_check_did))) = false;
+#endif
     struct image_info info1, *info = &info1;
     struct linux_binprm bprm;
     TaskState *ts;
@@ -760,7 +795,7 @@ int main(int argc, char **argv, char **envp)
     errno = 0;
     execfd = qemu_getauxval(AT_EXECFD);
     if (errno != 0) {
-        execfd = open(exec_path, O_RDONLY);
+        execfd = open(exec_path, O_RDONLY | O_CLOEXEC);
         if (execfd < 0) {
             printf("Error while loading %s: %s\n", exec_path, strerror(errno));
             _exit(EXIT_FAILURE);
@@ -1022,6 +1057,17 @@ int main(int argc, char **argv, char **envp)
 
     init_main_thread(cpu, info);
 
+#ifdef CONFIG_JOVE_HELPERS
+    if (getenv("JOVE_PRINT_CONSTANTS")) {
+      _jove_print_tcg_constants();
+      exit(EXIT_SUCCESS);
+    } else if (getenv("JOVE_DUMP_ENV")) {
+      ; /* we dump on the first call to tcg_qemu_tb_exec() */
+    } else {
+      exit(EXIT_FAILURE);
+    }
+#endif
+
     if (gdbstub) {
         gdbserver_start(gdbstub, &error_fatal);
     }
@@ -1030,7 +1076,368 @@ int main(int argc, char **argv, char **envp)
     qemu_semihosting_guestfd_init();
 #endif
 
+#ifdef CONFIG_JOVE
+    jv_cpu = cpu;
+    __jove_did = true; /* we got here */
+#else
     cpu_loop(env);
+#endif
     /* never exits */
     return 0;
+}
+
+#ifdef CONFIG_JOVE_HELPERS
+
+void _jove_do_print_tcg_constants(unsigned taddr_bits,
+                                  const char **callconv_args,
+                                  const char **callconv_rets,
+                                  const char **not_args,
+                                  const char **not_rets,
+                                  const char **pinned,
+                                  const char **strarr);
+
+void _jove_print_tcg_constants(void) {
+  static const char *const strarr[][2] = {
+#if defined(TARGET_X86_64)
+      {"program_counter", "rip"},
+      {"frame_pointer", "rbp"},
+      {"stack_pointer", "rsp"},
+      {"fs_base", "fs_base"},
+      {"gs_base", "gs_base"},
+      {"rax", "rax"},
+#elif defined(TARGET_I386)
+      {"program_counter", "eip"},
+      {"frame_pointer", "ebp"},
+      {"stack_pointer", "esp"},
+      {"fs_base", "fs_base"},
+      {"gs_base", "gs_base"},
+      {"eax", "eax"},
+#elif defined(TARGET_MIPS64)
+      {"program_counter", "PC"},
+      {"frame_pointer", "s8"},
+      {"stack_pointer", "sp"},
+      {"t9", "t9"},
+      {"ra", "ra"},
+      {"lladdr", "lladdr"},
+      {"llval", "llval"},
+#elif defined(TARGET_MIPS)
+      {"program_counter", "PC"},
+      {"frame_pointer", "s8"},
+      {"stack_pointer", "sp"},
+      {"t9", "t9"},
+      {"ra", "ra"},
+      {"btarget", "btarget"},
+      {"lladdr", "lladdr"},
+      {"llval", "llval"},
+#elif defined(TARGET_AARCH64)
+      {"program_counter", "PC"}, /* made uppercase to distinguish */
+      {"frame_pointer", "x29"},
+      {"stack_pointer", "sp"},
+#else
+#error
+#endif
+      {NULL, NULL}};
+
+  static const char *const callconv_args[] = {
+#if defined(TARGET_X86_64)
+      "rdi", "rsi", "rdx", "rcx", "r8", "r9",
+#elif defined(TARGET_I386)
+      "eax", "edx", "ecx",
+#elif defined(TARGET_MIPS64)
+      "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3",
+#elif defined(TARGET_MIPS)
+      "a0", "a1", "a2", "a3",
+#elif defined(TARGET_AARCH64)
+      "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
+#else
+#error
+#endif
+      NULL};
+
+  static const char *const callconv_rets[] = {
+#if defined(TARGET_X86_64)
+      "rax", "rdx",
+#elif defined(TARGET_I386)
+      "eax", "edx",
+#elif defined(TARGET_MIPS64) || defined(TARGET_MIPS)
+      "v0", "v1",
+#elif defined(TARGET_AARCH64)
+      "x0", "x1",
+#else
+#error
+#endif
+      NULL};
+
+#if defined(TARGET_X86_64)
+  static const char *const not_arg_or_ret_regs[] = {
+    "_frame",
+    "env",
+    "es_base",
+    "cs_base",
+    "ss_base",
+    "ds_base",
+    "fs_base",
+    "gs_base",
+    "bnd0_lb",
+    "bnd0_ub",
+    "bnd1_lb",
+    "bnd1_ub",
+    "bnd2_lb",
+    "bnd2_ub",
+    "bnd3_lb",
+    "bnd3_ub",
+    "cc_op",
+    "cc_dst",
+    "cc_src",
+    "cc_src2",
+    "rip",
+    NULL
+  };
+  const char **not_ret_regs = &not_arg_or_ret_regs[0];
+  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+#elif defined(TARGET_I386)
+  static const char *const not_arg_or_ret_regs[] = {
+    "_frame",
+    "env",
+    "es_base",
+    "cs_base",
+    "ss_base",
+    "ds_base",
+    "fs_base",
+    "gs_base",
+    "bnd0_lb_0",
+    "bnd0_lb_1",
+    "bnd0_ub_0",
+    "bnd0_ub_1",
+    "bnd1_lb_0",
+    "bnd1_lb_1",
+    "bnd1_ub_0",
+    "bnd1_ub_1",
+    "bnd2_lb_0",
+    "bnd2_lb_1",
+    "bnd2_ub_0",
+    "bnd2_ub_1",
+    "bnd3_lb_0",
+    "bnd3_lb_1",
+    "bnd3_ub_0",
+    "bnd3_ub_1",
+    "cc_op",
+    "cc_dst",
+    "cc_src",
+    "cc_src2",
+    "bnd0_lb",
+    "bnd0_ub",
+    "bnd1_lb",
+    "bnd1_ub",
+    "bnd2_lb",
+    "bnd2_ub",
+    "bnd3_lb",
+    "bnd3_ub",
+    "eip",
+    NULL
+  };
+  const char **not_ret_regs = &not_arg_or_ret_regs[0];
+  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+#elif defined(TARGET_MIPS64)
+  static const char *not_arg_or_ret_regs[] = {
+    "_frame",
+    "env",
+    "PC",
+    NULL
+  };
+
+  const char **not_ret_regs = &not_arg_or_ret_regs[0];
+  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+#elif defined(TARGET_MIPS)
+  static const char *const not_arg_regs[] = {
+    "_frame",
+    "env",
+    "PC",
+    "btarget",
+    "bcond",
+    NULL
+  };
+  static const char *const not_ret_regs[] = {
+    "_frame",
+    "env",
+    "PC",
+    "ra",
+    "gp",
+    "btarget",
+    "bcond",
+    NULL
+  };
+#elif defined(TARGET_AARCH64)
+  static const char *const not_arg_regs[] = {
+    "env",
+    "pc",
+    "PC",
+    NULL
+  };
+  static const char *const not_ret_regs[] = {
+    "env",
+    "pc",
+    "PC",
+    "lr",
+    "CF",
+    "NF",
+    "VF",
+    "ZF",
+    "exclusive_addr",
+    "exclusive_val",
+    "exclusive_high",
+    NULL
+  };
+#else
+#error
+#endif
+
+  static const char *const pinned[] = {
+#if defined(TARGET_MIPS64)
+    "f0",
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10",
+    "f11",
+    "f12",
+    "f13",
+    "f14",
+    "f15",
+    "f16",
+    "f17",
+    "f18",
+    "f19",
+    "f20",
+    "f21",
+    "f22",
+    "f23",
+    "f24",
+    "f25",
+    "f26",
+    "f27",
+    "f28",
+    "f29",
+    "f30",
+    "f31",
+    "w0.d1",
+    "w1.d1",
+    "w2.d1",
+    "w3.d1",
+    "w4.d1",
+    "w5.d1",
+    "w6.d1",
+    "w7.d1",
+    "w8.d1",
+    "w9.d1",
+    "hflags",
+    "fcr0",
+    "fcr31",
+#elif defined(TARGET_MIPS)
+    "f0",
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5",
+    "f6",
+    "f7",
+    "f8",
+    "f9",
+    "f10",
+    "f11",
+    "f12",
+    "f13",
+    "f14",
+    "f15",
+    "f16",
+    "f17",
+    "f18",
+    "f19",
+    "f20",
+    "f21",
+    "f22",
+    "f23",
+    "f24",
+    "f25",
+    "f26",
+    "f27",
+    "f28",
+    "f29",
+    "f30",
+    "f31",
+    "w0.d1",
+    "w1.d1",
+    "w2.d1",
+    "w3.d1",
+    "w4.d1",
+    "w5.d1",
+    "w6.d1",
+    "w7.d1",
+    "w8.d1",
+    "w9.d1",
+    "w10.d1",
+    "w11.d1",
+    "w12.d1",
+    "w13.d1",
+    "w14.d1",
+    "w15.d1",
+    "w16.d1",
+    "w17.d1",
+    "w18.d1",
+    "w19.d1",
+    "w20.d1",
+    "w21.d1",
+    "w22.d1",
+    "w23.d1",
+    "w24.d1",
+    "w25.d1",
+    "w26.d1",
+    "w27.d1",
+    "w28.d1",
+    "w29.d1",
+    "w30.d1",
+    "hflags",
+    "fcr0",
+    "fcr31",
+#else
+#endif
+    NULL
+  };
+
+  _jove_do_print_tcg_constants(TARGET_LONG_BITS,
+                               &callconv_args[0],
+                               &callconv_rets[0],
+                               &not_arg_regs[0],
+                               &not_ret_regs[0],
+                               &pinned[0],
+                               &strarr[0][0]);
+}
+
+void _jove_dump_env(CPUArchState *env) {
+  ssize_t wrote = qemu_write_full(STDOUT_FILENO, env, sizeof(*env));
+  if (wrote != sizeof(*env))
+    abort();
+}
+
+#endif /* CONFIG_JOVE_HELPERS */
+
+#if defined(CONFIG_JOVE) && !defined(CONFIG_TARGET_XML_FILES)
+
+const GDBFeature gdb_static_features[] = {
+  { NULL }
+};
+
+#endif
+
+int qmp_block_resize(void) {
+  assert(false);
+  __builtin_trap();
+  __builtin_unreachable();
 }

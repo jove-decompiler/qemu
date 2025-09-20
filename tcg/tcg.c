@@ -433,6 +433,9 @@ tlb_mask_table_ofs(TCGContext *s, int which)
 static G_NORETURN
 void tcg_raise_tb_overflow(TCGContext *s)
 {
+#ifdef CONFIG_JOVE
+    assert(false && "tcg_raise_tb_overflow!");
+#endif
     siglongjmp(s->jmp_trans, -2);
 }
 
@@ -1280,10 +1283,31 @@ static const TCGOutOp * const all_outop[NB_OPS] = {
  * modes.
  */
 #ifdef CONFIG_USER_ONLY
+#ifdef CONFIG_JOVE
+void tcg_register_thread(void)
+{
+    TCGContext *s = g_malloc(sizeof(*s));
+    unsigned int i, n;
+
+    *s = tcg_init_ctx;
+
+    /* Relink mem_base.  */
+    for (i = 0, n = tcg_init_ctx.nb_globals; i < n; ++i) {
+        if (tcg_init_ctx.temps[i].mem_base) {
+            ptrdiff_t b = tcg_init_ctx.temps[i].mem_base - tcg_init_ctx.temps;
+            tcg_debug_assert(b >= 0 && b < n);
+            s->temps[i].mem_base = &s->temps[b];
+        }
+    }
+
+    tcg_ctx = s;
+}
+#else
 void tcg_register_thread(void)
 {
     tcg_ctx = &tcg_init_ctx;
 }
+#endif
 #else
 void tcg_register_thread(void)
 {
@@ -1961,6 +1985,219 @@ void tcg_prologue_init(void)
 
     tcg_region_prologue_set(s);
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#define JOVE_ENOUGH_BITS (9 * sizeof(unsigned long) * BITS_PER_BYTE)
+#define JOVE_ENOUGH_ULONGS (JOVE_ENOUGH_BITS / (sizeof(unsigned long) * BITS_PER_BYTE))
+
+typedef struct jove_glbs_t {
+  unsigned long arr[JOVE_ENOUGH_ULONGS];
+} jove_glbs_t;
+
+#define JOVE_GLBS_INIT ((jove_glbs_t){.arr = {0}})
+
+static bool _jove_is_glbs_empty(const jove_glbs_t *glbs) {
+  for (unsigned i = 0; i < JOVE_ENOUGH_ULONGS; ++i) {
+    if (glbs->arr[i])
+      return false;
+  }
+
+  return true;
+}
+
+static int _jove_index_of_glb(const char *nm) {
+  assert(nm);
+
+  for (int i = 0; i < tcg_ctx->nb_globals; i++) {
+    const char *name = tcg_ctx->temps[i].name;
+    if (!name)
+      continue;
+
+    if (strcmp(name, nm) == 0)
+      return i;
+  }
+
+  return -1;
+}
+
+static void _jove_print_lookup_by_mem_offset(TCGContext *s) {
+  int max_off = -1;
+
+  for (int i = 0; i < s->nb_globals; i++) {
+    int off = s->temps[i].mem_offset;
+    max_off = MAX(max_off, off);
+  }
+
+  assert(max_off > 0);
+
+  printf("static const uint8_t tcg_global_by_offset_lookup_table[%u] = {\n"
+         "[0 ... %u] = 0xff,\n",
+         max_off + 1, max_off);
+
+  for (int i = 0; i < s->nb_globals; i++) {
+    TCGTemp *ts = &s->temps[i];
+
+    if (!ts->mem_base ||
+        (ts->mem_base->name && strcmp(ts->mem_base->name, "env") != 0))
+      continue;
+
+    // global index must fit in a uint8_t
+    assert(i < 0xff);
+
+    printf("[%u] = %d,\n", (unsigned)ts->mem_offset, i);
+  }
+
+  printf("};\n");
+}
+
+static void _jove_print_global_set(TCGContext *s,
+                                   const char *name,
+                                   const jove_glbs_t *in) {
+  int i;
+
+  assert(JOVE_ENOUGH_BITS >= s->nb_globals);
+
+  printf("static const tcg_global_set_t %s(", name);
+  if (find_last_bit(&in->arr[0], JOVE_ENOUGH_BITS) == JOVE_ENOUGH_BITS) {
+    assert(_jove_is_glbs_empty(in));
+    putchar('0');
+  } else {
+    putchar('\"');
+    for (i = s->nb_globals - 1; i >= 0; --i)
+      putchar(test_bit(i, &in->arr[0]) ? '1' : '0');
+    putchar('\"');
+  }
+  printf(");\n");
+}
+
+static void _jove_print_globals_as_array(TCGContext *s,
+                                         const char **glbarr) {
+  const char **glbp;
+
+  for (glbp = glbarr; *glbp; ++glbp) {
+    int idx = _jove_index_of_glb(*glbp);
+    if (idx < 0)
+      continue;
+
+    if (glbp != glbarr)
+      putchar(',');
+
+    printf("%uu", idx);
+  }
+}
+
+static unsigned _jove_load_global_set(TCGContext *s,
+                                      jove_glbs_t *out,
+                                      const char **glbarr) {
+  unsigned res = 0;
+  const char **glbp;
+
+  for (glbp = glbarr; *glbp; ++glbp) {
+    int idx = _jove_index_of_glb(*glbp);
+    if (idx < 0)
+      continue;
+
+    ++res;
+    set_bit(idx, &out->arr[0]);
+  }
+
+  return res;
+}
+
+void _jove_do_print_tcg_constants(unsigned taddr_bits,
+                                  const char **callconv_args,
+                                  const char **callconv_rets,
+                                  const char **not_args,
+                                  const char **not_rets,
+                                  const char **pinned,
+                                  const char **strarr) {
+  unsigned target_num_reg_args = 0;
+  int env_idx = _jove_index_of_glb("env");
+  assert(env_idx >= 0);
+
+  TCGContext *const s = tcg_ctx;
+
+  printf("#pragma once\n"
+         "#ifdef __cplusplus\n"
+         "#include <bitset>\n"
+         "#include <array>\n"
+         "#include <cstdint>\n"
+         "\n"
+         "namespace jove {\n"
+         "\n");
+
+  printf("typedef uint%u_t taddr_t;\n", taddr_bits);
+
+  printf("constexpr int tcg_env_index(%d);\n", env_idx);
+
+  printf("constexpr unsigned tcg_num_globals(%uu);\n", (unsigned)s->nb_globals);
+  printf("typedef std::bitset<tcg_num_globals> tcg_global_set_t;\n");
+  printf("constexpr unsigned tcg_max_temps(%uu);\n", (unsigned)TCG_MAX_TEMPS);
+
+
+  {
+    jove_glbs_t args = JOVE_GLBS_INIT;
+
+    target_num_reg_args = _jove_load_global_set(s, &args, callconv_args);
+    _jove_print_global_set(s, "CallConvArgs", &args);
+
+    printf("typedef std::array<unsigned, %u> CallConvArgArrayTy;\n",
+           target_num_reg_args);
+
+    printf("static const CallConvArgArrayTy CallConvArgArray{");
+    _jove_print_globals_as_array(s, callconv_args);
+    printf("};\n");
+  }
+
+  {
+    jove_glbs_t rets = JOVE_GLBS_INIT;
+
+    unsigned target_num_reg_rets = _jove_load_global_set(s, &rets, callconv_rets);
+    _jove_print_global_set(s, "CallConvRets", &rets);
+
+    printf("typedef std::array<unsigned, %u> CallConvRetArrayTy;\n",
+           target_num_reg_rets);
+
+    printf("static const CallConvRetArrayTy CallConvRetArray{");
+    _jove_print_globals_as_array(s, callconv_rets);
+    printf("};\n");
+  }
+
+  {
+    jove_glbs_t not = JOVE_GLBS_INIT;
+
+    _jove_load_global_set(s, &not, not_args);
+    _jove_print_global_set(s, "NotArgs", &not);
+  }
+
+  {
+    jove_glbs_t not = JOVE_GLBS_INIT;
+
+    _jove_load_global_set(s, &not, not_rets);
+    _jove_print_global_set(s, "NotRets", &not);
+  }
+
+  {
+    jove_glbs_t pin = JOVE_GLBS_INIT;
+
+    _jove_load_global_set(s, &pin, pinned);
+    _jove_print_global_set(s, "InitPinnedEnvGlbs", &pin);
+  }
+
+  _jove_print_lookup_by_mem_offset(s);
+
+  for (const char **p = strarr; p[0] && p[1]; p += 2) {
+    printf("constexpr int tcg_%s_index(%d);\n", p[0], _jove_index_of_glb(p[1]));
+  }
+
+  printf("\n"
+         "}\n"
+         "\n"
+         "#endif /* __cplusplus */\n"
+         "\n"
+         "#define TARGET_NUM_REG_ARGS %u\n", target_num_reg_args);
+}
+#endif
 
 void tcg_func_start(TCGContext *s)
 {
@@ -3253,6 +3490,54 @@ void tcg_dump_ops(TCGContext *s, FILE *f, bool have_prefs)
         putc('\n', f);
     }
 }
+
+#ifdef CONFIG_JOVE
+
+#include "jove.h"
+
+void *jv_get_tcg_context(void) {
+  return tcg_ctx;
+}
+
+int jv_tcgopc_nb_cargs_in_def(unsigned opc) { return tcg_op_defs[opc].nb_cargs; }
+int jv_tcgopc_nb_iargs_in_def(unsigned opc) { return tcg_op_defs[opc].nb_iargs; }
+int jv_tcgopc_nb_oargs_in_def(unsigned opc) { return tcg_op_defs[opc].nb_oargs; }
+const char *jv_tcgopc_name_in_def(unsigned opc) {
+  return tcg_op_defs[opc].name;
+}
+
+const char *jv_tcg_find_helper(void *p) {
+  TCGOp *op = (TCGOp *)p;
+  assert(op->opc == INDEX_op_call);
+
+  const TCGHelperInfo *info = tcg_call_info(op);
+  return info->name;
+}
+
+const char *jv_tcg_get_arg_str(char *buf, int buf_size, uint64_t arg) {
+  TCGArg Arg = arg;
+  return tcg_get_arg_str(tcg_ctx, buf, buf_size, Arg);
+}
+
+const char *jv_get_global_name(int idx) {
+  return tcg_ctx->temps[idx].name;
+}
+
+void jv_tcg_func_start(void *ctx) {
+  TCGContext *s = (TCGContext *)ctx;
+
+  tcg_func_start(s);
+}
+
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+#undef helper_memset
+__attribute__((visibility("hidden"))) void *helper_memset(void *, int, size_t);
+void *helper_memset(void *s, int c, size_t n) {
+  return __builtin_memset(s, c, n);
+}
+#endif
 
 /* we give more priority to constraints with less registers */
 static int get_constraint_priority(const TCGArgConstraint *arg_ct, int k)

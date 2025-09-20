@@ -21,12 +21,26 @@
 #include "disas/disas.h"
 #include "tb-internal.h"
 
+#ifdef CONFIG_JOVE
+#include "jove.h"
+#endif
+
+#ifdef CONFIG_JOVE
+
+static void set_can_do_io(DisasContextBase *db, bool val)
+{
+}
+
+#else
+
 static void set_can_do_io(DisasContextBase *db, bool val)
 {
     QEMU_BUILD_BUG_ON(sizeof_field(CPUState, neg.can_do_io) != 1);
     tcg_gen_st8_i32(tcg_constant_i32(val), tcg_env,
                     offsetof(CPUState, neg.can_do_io) - sizeof(CPUState));
 }
+
+#endif
 
 bool translator_io_start(DisasContextBase *db)
 {
@@ -46,10 +60,16 @@ static TCGOp *gen_tb_start(DisasContextBase *db, uint32_t cflags)
     TCGOp *icount_start_insn = NULL;
 
     if ((cflags & CF_USE_ICOUNT) || !(cflags & CF_NOIRQ)) {
+#ifdef CONFIG_JOVE
+        (void)count;
+        assert(!(!!(cflags & CF_USE_ICOUNT)));
+        assert(!!(cflags & CF_NOIRQ));
+#else
         count = tcg_temp_new_i32();
         tcg_gen_ld_i32(count, tcg_env,
                        offsetof(CPUState, neg.icount_decr.u32) -
                        sizeof(CPUState));
+#endif /* CONFIG_JOVE */
     }
 
     if (cflags & CF_USE_ICOUNT) {
@@ -119,6 +139,8 @@ bool translator_use_goto_tb(DisasContextBase *db, vaddr dest)
     return translator_is_same_page(db, dest);
 }
 
+extern bool jv_is_mips_target;
+
 void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
                      vaddr pc, void *host_pc, const TranslatorOps *ops,
                      DisasContextBase *db)
@@ -154,6 +176,8 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
     plugin_enabled = plugin_gen_tb_start(cpu, db);
     db->plugin_enabled = plugin_enabled;
 
+    const bool isMipsTarget = jv_is_mips_target;
+
     while (true) {
         *max_insns = ++db->num_insns;
         ops->insn_start(db, cpu);
@@ -166,6 +190,11 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
         if (plugin_enabled) {
             plugin_gen_insn_start(cpu, db);
         }
+
+#ifdef CONFIG_JOVE
+        if (!isMipsTarget) /* XXX delay slot */
+        jv_term_addr_is(db->pc_next);
+#endif
 
         /*
          * Disassemble one instruction.  The translate_insn hook should
@@ -190,6 +219,10 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
 
         /* Stop translation if translate_insn so indicated.  */
         if (db->is_jmp != DISAS_NEXT) {
+#ifdef CONFIG_JOVE
+            if (jv_is_term_unknown())
+              jv_term_is_none(db->pc_next);
+#endif
             break;
         }
 
@@ -197,8 +230,33 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
            or we have executed all of the allowed instructions.  */
         if (tcg_op_buf_full() || db->num_insns >= db->max_insns) {
             db->is_jmp = DISAS_TOO_MANY;
+
+#ifdef CONFIG_JOVE
+extern bool jv_are_on_delay_slot(DisasContextBase *);
+            if (!isMipsTarget || !jv_are_on_delay_slot(db)) {
+
+            if (jv_is_term_unknown())
+                jv_term_is_none(db->pc_next);
+#endif
             break;
+#ifdef CONFIG_JOVE
+            }
+#endif
         }
+
+#ifdef CONFIG_JOVE
+        if (jv_get_end_pc()) {
+            if (db->pc_next >= jv_get_end_pc()) {
+                db->is_jmp = DISAS_TOO_MANY;
+
+                if (jv_is_term_unknown()) {
+                    jv_term_addr_is(0); /* XXX */
+                    jv_term_is_none(jv_get_end_pc());
+                }
+                break;
+            }
+        }
+#endif
     }
 
     /* Emit code to exit the TB, as indicated by db->is_jmp.  */
@@ -367,6 +425,13 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
     return true;
 }
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+
+static void record_save(DisasContextBase *db, vaddr pc,
+                        const void *from, int size) {}
+
+#else
+
 static void record_save(DisasContextBase *db, vaddr pc,
                         const void *from, int size)
 {
@@ -399,6 +464,8 @@ static void record_save(DisasContextBase *db, vaddr pc,
 
     memcpy(db->record + (offset - db->record_start), from, size);
 }
+
+#endif
 
 size_t translator_st_len(const DisasContextBase *db)
 {

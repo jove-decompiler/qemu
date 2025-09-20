@@ -562,7 +562,7 @@ static void object_initialize_with_type(Object *obj, size_t size, TypeImpl *type
     g_assert(size >= type->instance_size);
 
     memset(obj, 0, type->instance_size);
-    obj->class = type->class;
+    obj->clazz = type->class;
     object_ref(obj);
     object_class_property_init_all(obj);
     obj->properties = g_hash_table_new_full(g_str_hash, g_str_equal,
@@ -723,7 +723,7 @@ static void object_deinit(Object *obj, TypeImpl *type)
 static void object_finalize(void *data)
 {
     Object *obj = data;
-    TypeImpl *ti = obj->class->type;
+    TypeImpl *ti = obj->clazz->type;
 
     object_property_del_all(obj);
     object_deinit(obj, ti);
@@ -904,7 +904,7 @@ Object *object_dynamic_cast(Object *obj, const char *typename)
 Object *object_dynamic_cast_assert(Object *obj, const char *typename,
                                    const char *file, int line, const char *func)
 {
-    trace_object_dynamic_cast_assert(obj ? obj->class->type->name : "(null)",
+    trace_object_dynamic_cast_assert(obj ? obj->clazz->type->name : "(null)",
                                      typename, file, line, func);
 
 #ifdef CONFIG_QOM_CAST_DEBUG
@@ -912,7 +912,7 @@ Object *object_dynamic_cast_assert(Object *obj, const char *typename,
     Object *inst;
 
     for (i = 0; obj && i < OBJECT_CLASS_CAST_CACHE; i++) {
-        if (qatomic_read(&obj->class->object_cast_cache[i]) == typename) {
+        if (qatomic_read(&obj->clazz->object_cast_cache[i]) == typename) {
             goto out;
         }
     }
@@ -929,10 +929,10 @@ Object *object_dynamic_cast_assert(Object *obj, const char *typename,
 
     if (obj && obj == inst) {
         for (i = 1; i < OBJECT_CLASS_CAST_CACHE; i++) {
-            qatomic_set(&obj->class->object_cast_cache[i - 1],
-                       qatomic_read(&obj->class->object_cast_cache[i]));
+            qatomic_set(&obj->clazz->object_cast_cache[i - 1],
+                       qatomic_read(&obj->clazz->object_cast_cache[i]));
         }
-        qatomic_set(&obj->class->object_cast_cache[i - 1], typename);
+        qatomic_set(&obj->clazz->object_cast_cache[i - 1], typename);
     }
 
 out:
@@ -1035,12 +1035,12 @@ out:
 
 const char *object_get_typename(const Object *obj)
 {
-    return obj->class->type->name;
+    return obj->clazz->type->name;
 }
 
 ObjectClass *object_get_class(Object *obj)
 {
-    return obj->class;
+    return obj->clazz;
 }
 
 bool object_class_is_abstract(ObjectClass *klass)
@@ -1811,8 +1811,8 @@ static void object_finalize_child_property(Object *obj, const char *name,
 {
     Object *child = opaque;
 
-    if (child->class->unparent) {
-        (child->class->unparent)(child);
+    if (child->clazz->unparent) {
+        (child->clazz->unparent)(child);
     }
     child->parent = NULL;
     object_unref(child);

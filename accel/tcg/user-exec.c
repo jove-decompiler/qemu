@@ -236,6 +236,8 @@ void page_dump(FILE *f)
     walk_memory_regions(f, dump_region);
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 int page_get_flags(vaddr address)
 {
     PageFlagsNode *p = pageflags_find(address, address);
@@ -257,6 +259,8 @@ int page_get_flags(vaddr address)
     mmap_unlock();
     return p ? p->flags : 0;
 }
+
+#endif
 
 /* A subroutine of page_set_flags: insert a new node for [start,last]. */
 static void pageflags_create(vaddr start, vaddr last, int flags)
@@ -798,10 +802,21 @@ int page_unprotect(CPUState *cpu, tb_page_addr_t address, uintptr_t pc)
     return current_tb_invalidated ? 2 : 1;
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+static int probe_access_internal(CPUArchState *env, vaddr addr,
+                                 int fault_size, MMUAccessType access_type,
+                                 bool nonfault, uintptr_t ra) { return 0; }
+
+#else
+
 static int probe_access_internal(CPUArchState *env, vaddr addr,
                                  int fault_size, MMUAccessType access_type,
                                  bool nonfault, uintptr_t ra)
 {
+#ifdef CONFIG_JOVE
+    return 0;
+#else
     int acc_flag;
     bool maperr;
 
@@ -838,7 +853,10 @@ static int probe_access_internal(CPUArchState *env, vaddr addr,
     }
 
     cpu_loop_exit_sigsegv(env_cpu(env), addr, access_type, maperr, ra);
+#endif
 }
+
+#endif /* CONFIG_JOVE_HELPERS */
 
 int probe_access_flags(CPUArchState *env, vaddr addr, int size,
                        MMUAccessType access_type, int mmu_idx,
@@ -988,6 +1006,9 @@ void *page_get_target_data(vaddr address, size_t size)
 static void *cpu_mmu_lookup(CPUState *cpu, vaddr addr,
                             MemOp mop, uintptr_t ra, MMUAccessType type)
 {
+#ifdef CONFIG_JOVE_HELPERS
+    void *ret;
+#else
     int a_bits = memop_alignment_bits(mop);
     void *ret;
 
@@ -995,6 +1016,7 @@ static void *cpu_mmu_lookup(CPUState *cpu, vaddr addr,
     if (unlikely(addr & ((1 << a_bits) - 1))) {
         cpu_loop_exit_sigbus(cpu, addr, type, ra);
     }
+#endif
 
     ret = g2h(cpu, addr);
     set_helper_retaddr(ra);
@@ -1275,6 +1297,9 @@ uint64_t cpu_ldq_code_mmu(CPUArchState *env, vaddr addr,
 static void *atomic_mmu_lookup(CPUState *cpu, vaddr addr, MemOpIdx oi,
                                int size, uintptr_t retaddr)
 {
+#ifdef CONFIG_JOVE_HELPERS
+    void *ret;
+#else
     MemOp mop = get_memop(oi);
     int a_bits = memop_alignment_bits(mop);
     void *ret;
@@ -1288,6 +1313,7 @@ static void *atomic_mmu_lookup(CPUState *cpu, vaddr addr, MemOpIdx oi,
     if (unlikely(addr & (size - 1))) {
         cpu_loop_exit_atomic(cpu, retaddr);
     }
+#endif
 
     ret = g2h(cpu, addr);
     set_helper_retaddr(retaddr);

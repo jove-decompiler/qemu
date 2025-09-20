@@ -154,7 +154,7 @@ struct ObjectClass
 struct Object
 {
     /* private: */
-    ObjectClass *class;
+    ObjectClass *clazz;
     ObjectFree *free;
     GHashTable *properties;
     uint32_t ref;
@@ -862,7 +862,7 @@ Object *object_dynamic_cast(Object *obj, const char *typename);
  * This function is not meant to be called directly, but only through
  * the wrapper macro OBJECT_CHECK.
  */
-Object *object_dynamic_cast_assert(Object *obj, const char *typename,
+Object *object_dynamic_cast_assert(Object *obj, const char *,
                                    const char *file, int line, const char *func);
 
 /**
@@ -951,7 +951,7 @@ void object_set_properties_from_keyval(Object *obj, const QDict *qdict,
  * the wrapper macro OBJECT_CLASS_CHECK.
  */
 ObjectClass *object_class_dynamic_cast_assert(ObjectClass *klass,
-                                              const char *typename,
+                                              const char *,
                                               const char *file, int line,
                                               const char *func);
 
@@ -970,7 +970,7 @@ ObjectClass *object_class_dynamic_cast_assert(ObjectClass *klass,
  * it.  (FIXME: perhaps this can be detected at type definition time?)
  */
 ObjectClass *object_class_dynamic_cast(ObjectClass *klass,
-                                       const char *typename);
+                                       const char *);
 
 /**
  * object_class_get_parent:

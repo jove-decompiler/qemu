@@ -42,12 +42,18 @@
 #include "qapi/qapi-types-machine-common.h"
 #include "qemu/bitops.h"
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define JOVE_MS_STRUCT __attribute__((ms_struct))
+#else
+#define JOVE_MS_STRUCT
+#endif
+
 /*
  * APIC IDs can be 32-bit, but beware: APIC IDs > 255 require x2APIC support
  */
 typedef uint32_t apic_id_t;
 
-typedef struct X86CPUTopoIDs {
+typedef struct JOVE_MS_STRUCT X86CPUTopoIDs {
     unsigned pkg_id;
     unsigned die_id;
     unsigned module_id;
@@ -55,7 +61,7 @@ typedef struct X86CPUTopoIDs {
     unsigned smt_id;
 } X86CPUTopoIDs;
 
-typedef struct X86CPUTopoInfo {
+typedef struct JOVE_MS_STRUCT X86CPUTopoInfo {
     unsigned dies_per_pkg;
     unsigned modules_per_die;
     unsigned cores_per_module;

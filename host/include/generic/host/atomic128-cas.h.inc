@@ -34,39 +34,84 @@ static inline Int128 ATTRIBUTE_ATOMIC128_OPT
 atomic16_xchg(Int128 *ptr, Int128 new)
 {
     __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
+#ifdef __clang__
+    __int128 old = *ptr_align;
+#ifdef new
+#error
+#else
+    __int128_t rawnew = int128_to_raw(new);
+#define new rawnew
+#endif
+#else
     Int128 old = *ptr_align;
+#endif
 
     while (!__atomic_compare_exchange_n(ptr_align, &old, new, true,
                                         __ATOMIC_SEQ_CST, 0)) {
         continue;
     }
+#ifdef __clang__
+#undef new
+    return int128_from_raw(old);
+#else
     return old;
+#endif
 }
 
 static inline Int128 ATTRIBUTE_ATOMIC128_OPT
 atomic16_fetch_and(Int128 *ptr, Int128 val)
 {
     __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
+#ifdef __clang__
+    __int128 old = *ptr_align;
+#ifdef val
+#error
+#else
+    __int128_t rawval = int128_to_raw(val);
+#define val rawval
+#endif
+#else
     Int128 old = *ptr_align;
+#endif
 
     while (!__atomic_compare_exchange_n(ptr_align, &old, old & val, true,
                                         __ATOMIC_SEQ_CST, 0)) {
         continue;
     }
+#ifdef __clang__
+#undef val
+    return int128_from_raw(old);
+#else
     return old;
+#endif
 }
 
 static inline Int128 ATTRIBUTE_ATOMIC128_OPT
 atomic16_fetch_or(Int128 *ptr, Int128 val)
 {
     __int128_t *ptr_align = __builtin_assume_aligned(ptr, 16);
+#ifdef __clang__
+    __int128 old = *ptr_align;
+#ifdef val
+#error
+#else
+    __int128_t rawval = int128_to_raw(val);
+#define val rawval
+#endif
+#else
     Int128 old = *ptr_align;
+#endif
 
     while (!__atomic_compare_exchange_n(ptr_align, &old, old | val, true,
                                         __ATOMIC_SEQ_CST, 0)) {
         continue;
     }
+#ifdef __clang__
+#undef val
+    return int128_from_raw(old);
+#else
     return old;
+#endif
 }
 # define HAVE_CMPXCHG128 1
 #elif defined(CONFIG_CMPXCHG128)
