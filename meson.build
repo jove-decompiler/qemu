@@ -3,6 +3,15 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
                           'b_staticpic=false', 'stdsplit=false', 'optimization=2', 'b_pie=true'],
         version: files('VERSION'))
 
+# if clang, force -fuse-ld=lld
+if meson.get_compiler('c').get_id() == 'clang'
+  add_project_arguments('-fuse-ld=lld', language: 'c')
+endif
+
+if get_option('ms_bitfields')
+  add_project_arguments('-mms-bitfields', language: 'c')
+endif
+
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
 
 add_test_setup('quick', exclude_suites: ['slow', 'thorough'], is_default: true,
@@ -719,6 +728,26 @@ qemu_common_flags += cc.get_supported_arguments(hardening_flags)
 
 add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
+
+if get_option('jove_helpers')
+  c_compiler = meson.get_compiler('c')
+  if c_compiler.get_id() == 'clang' and c_compiler.compiles('''
+      # if __clang_major__ != 19
+      #  error
+      # endif''')
+    add_global_arguments('-Xclang', '-load', \
+                         '-Xclang', '/usr/local/lib/libcarbon-collect-19.so', \
+                         '-Xclang', '-add-plugin', \
+                         '-Xclang', 'carbon-collect', \
+                         '-Xclang', '-plugin-arg-carbon-collect', \
+                         '-Xclang', meson.source_root(), \
+                         '-Xclang', '-plugin-arg-carbon-collect', \
+                         '-Xclang', meson.current_build_dir(), language : 'c')
+  endif
+  add_global_arguments('-gdwarf-4', language : 'c')
+  add_global_arguments('-mllvm', '-trap-unreachable', language : 'c')
+  add_global_arguments('-DHW_POISON_H', language : 'c')
+endif
 
 # Collect warning flags we want to set, sorted alphabetically
 warn_flags = [
@@ -2331,6 +2360,9 @@ endif
 
 config_host_data = configuration_data()
 
+config_host_data.set('CONFIG_JOVE', get_option('jove'))
+config_host_data.set('CONFIG_JOVE_HELPERS', get_option('jove_helpers'))
+
 config_host_data.set('CONFIG_HAVE_RUST', have_rust)
 audio_drivers_selected = []
 if have_system
@@ -3446,6 +3478,9 @@ foreach target : target_dirs
   endforeach
   config_target_data.set('QEMU_ARCH',
                          'QEMU_ARCH_' + config_target['TARGET_BASE_ARCH'].to_upper())
+
+  config_target_data.set('CONFIG_TARGET_XML_FILES', 'TARGET_XML_FILES' in config_target)
+
   config_target_h += {target: configure_file(output: target + '-config-target.h',
                                                configuration: config_target_data)}
 
@@ -3752,6 +3787,7 @@ stub_ss = ss.source_set()
 trace_ss = ss.source_set()
 user_ss = ss.source_set()
 util_ss = ss.source_set()
+fpu_soft_ss = ss.source_set()
 
 # accel modules
 qtest_module_ss = ss.source_set()
@@ -3793,12 +3829,14 @@ endif
 qom_ss = qom_ss.apply({})
 libqom = static_library('qom', qom_ss.sources() + genh,
                         dependencies: [qom_ss.dependencies()],
+                        pic: get_option('jove'),
                         build_by_default: false)
 qom = declare_dependency(objects: libqom.extract_all_objects(recursive: false),
                          dependencies: qom_ss.dependencies())
 
 event_loop_base = files('event-loop-base.c')
 event_loop_base = static_library('event-loop-base',
+                                 pic: get_option('jove'),
                                  sources: event_loop_base + genh,
                                  build_by_default: false)
 event_loop_base = declare_dependency(objects: event_loop_base.extract_all_objects(recursive: false),
@@ -3811,6 +3849,7 @@ util_ss = util_ss.apply({})
 libqemuutil = static_library('qemuutil',
                              build_by_default: false,
                              sources: util_ss.sources() + stub_ss.sources() + genh,
+                             pic: get_option('jove'),
                              dependencies: [util_ss.dependencies(), libm, threads, glib, socket, malloc])
 qemuutil_deps = [event_loop_base]
 if host_os != 'windows'
@@ -3881,12 +3920,13 @@ subdir('system')
 # without lto, not even the alias is required -- we simply use different
 # declarations in different compilation units.
 pagevary = files('page-vary-common.c')
-if get_option('b_lto')
+if get_option('b_lto') and meson.get_compiler('c').get_id() == 'gcc'
   pagevary_flags = ['-fno-lto']
   if get_option('cfi')
     pagevary_flags += '-fno-sanitize=cfi-icall'
   endif
   pagevary = static_library('page-vary-common', sources: pagevary + genh,
+                            pic: get_option('jove'),
                             c_args: pagevary_flags)
   pagevary = declare_dependency(link_with: pagevary)
 endif
@@ -4117,6 +4157,7 @@ chardev = declare_dependency(objects: libchardev.extract_all_objects(recursive: 
 
 hwcore_ss = hwcore_ss.apply({})
 libhwcore = static_library('hwcore', sources: hwcore_ss.sources() + genh,
+                           pic: get_option('jove'),
                            build_by_default: false)
 hwcore = declare_dependency(objects: libhwcore.extract_all_objects(recursive: false))
 common_ss.add(hwcore)
@@ -4134,6 +4175,7 @@ libuser = static_library('user',
                                   '-DCOMPILING_SYSTEM_VS_USER'],
                          include_directories: common_user_inc,
                          dependencies: user_ss.all_dependencies(),
+                         pic: get_option('jove'),
                          build_by_default: false)
 
 libsystem = static_library('system',
@@ -4141,6 +4183,7 @@ libsystem = static_library('system',
                            c_args: ['-DCONFIG_SOFTMMU',
                                     '-DCOMPILING_SYSTEM_VS_USER'],
                            dependencies: system_ss.all_dependencies(),
+                           pic: get_option('jove'),
                            build_by_default: false)
 
 # Note that this library is never used directly (only through extract_objects)
@@ -4150,6 +4193,7 @@ common_all = static_library('common',
                             build_by_default: false,
                             sources: common_ss.all_sources() + genh,
                             implicit_include_directories: false,
+                            pic: get_option('jove'),
                             dependencies: common_ss.all_dependencies())
 
 # construct common libraries per base architecture
@@ -4187,6 +4231,7 @@ foreach target_base_arch, config_base_arch : config_base_arch_mak
       build_by_default: false,
       sources: src.all_sources() + genh,
       include_directories: inc,
+      pic: get_option('jove'),
       c_args: target_c_args,
       dependencies: src.all_dependencies() + common_deps +
                     system_deps + user_deps)
@@ -4210,6 +4255,7 @@ foreach target_base_arch, config_base_arch : config_base_arch_mak
       build_by_default: false,
       sources: src.all_sources() + genh,
       include_directories: inc,
+      pic: get_option('jove'),
       c_args: target_system_c_args,
       dependencies: src.all_dependencies() + common_deps + system_deps)
     target_common_system_arch_libs += {target_base_arch: lib}
@@ -4412,7 +4458,20 @@ foreach target : target_dirs
                  objects: objects,
                  include_directories: target_inc,
                  c_args: c_args,
+                 pic: get_option('jove'),
                  build_by_default: false)
+
+  libfpu_soft_c_args = c_args
+  libfpu_soft_c_args += ['-DJOVE_LIBFPU', '-ffreestanding', '-nostdlib']
+  fpu_soft = fpu_soft_ss.apply(config_target, strict: false)
+  libfpu_soft = static_library('fpu_soft-' + target,
+                 sources: fpu_soft.sources(),
+                 dependencies: fpu_soft.dependencies(),
+                 include_directories: target_inc,
+                 c_args: libfpu_soft_c_args,
+                 pic: true,
+                 build_by_default: true,
+                 name_suffix: 'a')
 
   if target.endswith('-softmmu')
     execs = [{
@@ -4452,14 +4511,45 @@ foreach target : target_dirs
       exe_name += '-unsigned'
     endif
 
+    if get_option('jove')
+    emulator = shared_library(exe_name, exe['sources'],
+               install: true,
+               c_args: c_args,
+               dependencies: arch_deps + exe['dependencies'],
+               objects: lib.extract_all_objects(recursive: true),
+               link_depends: [block_syms, qemu_syms],
+               link_args: link_args + ['-Wl,--unresolved-symbols=ignore-all', '-Wl,--allow-shlib-undefined'])
+
+    qemu4jove = static_library('qemu4jove-' + target_name, exe['sources'],
+               install: true,
+               c_args: c_args,
+               dependencies: arch_deps + exe['dependencies'] + [io, vhost_user],
+               objects: lib.extract_all_objects(recursive: true),
+               link_depends: [block_syms, qemu_syms],
+               link_args: link_args,
+               pic: get_option('jove'),
+               build_by_default: true,
+               name_suffix: 'a')
+    else
     emulator = executable(exe_name, exe['sources'],
                install: true,
                c_args: c_args,
                dependencies: arch_deps + exe['dependencies'],
                objects: lib.extract_all_objects(recursive: true),
                link_depends: [block_syms, qemu_syms],
-               link_args: link_args,
+               link_args: link_args + ['-latomic'],
                win_subsystem: exe['win_subsystem'])
+    if get_option('jove_helpers')
+    emulator_bitcode = executable(exe_name + '.bitcode', exe['sources'],
+               install: true,
+               c_args: c_args,
+               dependencies: arch_deps + exe['dependencies'],
+               objects: lib.extract_all_objects(recursive: true),
+               link_depends: [block_syms, qemu_syms],
+               link_args: link_args + ['-Wl,-plugin-opt=emit-llvm'],
+               win_subsystem: exe['win_subsystem'])
+    endif
+    endif
 
     if host_os == 'darwin'
       icon = 'pc-bios/qemu.rsrc'

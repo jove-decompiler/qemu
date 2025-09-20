@@ -38,11 +38,14 @@ meson_options_help() {
   printf "%s\n" '                           (choices: auto/disabled/enabled/internal/system)'
   printf "%s\n" '  --enable-fuzzing         build fuzzing targets'
   printf "%s\n" '  --enable-gcov            Enable coverage tracking.'
+  printf "%s\n" '  --enable-jove            build for jove'
+  printf "%s\n" '  --enable-jove-helpers    build for jove (helpers)'
   printf "%s\n" '  --enable-lto             Use link time optimization'
   printf "%s\n" '  --enable-malloc=CHOICE   choose memory allocator to use [system] (choices:'
   printf "%s\n" '                           jemalloc/system/tcmalloc)'
   printf "%s\n" '  --enable-module-upgrades try to load modules from alternate paths for'
   printf "%s\n" '                           upgrades'
+  printf "%s\n" '  --enable-ms-bitfields    build with -mms-bitfields'
   printf "%s\n" '  --enable-rng-none        dummy RNG, avoid using /dev/(u)random and'
   printf "%s\n" '                           getrandom()'
   printf "%s\n" '  --enable-safe-stack      SafeStack Stack Smash Protection (requires'
@@ -356,6 +359,10 @@ _meson_option_parse() {
     --interp-prefix=*) quote_sh "-Dinterp_prefix=$2" ;;
     --enable-jack) printf "%s" -Djack=enabled ;;
     --disable-jack) printf "%s" -Djack=disabled ;;
+    --enable-jove) printf "%s" -Djove=true ;;
+    --disable-jove) printf "%s" -Djove=false ;;
+    --enable-jove-helpers) printf "%s" -Djove_helpers=true ;;
+    --disable-jove-helpers) printf "%s" -Djove_helpers=false ;;
     --enable-keyring) printf "%s" -Dkeyring=enabled ;;
     --disable-keyring) printf "%s" -Dkeyring=disabled ;;
     --enable-kvm) printf "%s" -Dkvm=enabled ;;
@@ -408,6 +415,8 @@ _meson_option_parse() {
     --disable-modules) printf "%s" -Dmodules=disabled ;;
     --enable-mpath) printf "%s" -Dmpath=enabled ;;
     --disable-mpath) printf "%s" -Dmpath=disabled ;;
+    --enable-ms-bitfields) printf "%s" -Dms_bitfields=true ;;
+    --disable-ms-bitfields) printf "%s" -Dms_bitfields=false ;;
     --enable-multiprocess) printf "%s" -Dmultiprocess=enabled ;;
     --disable-multiprocess) printf "%s" -Dmultiprocess=disabled ;;
     --enable-netmap) printf "%s" -Dnetmap=enabled ;;

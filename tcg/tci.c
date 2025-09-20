@@ -344,6 +344,14 @@ uintptr_t QEMU_DISABLE_CFI tcg_qemu_tb_exec(CPUArchState *env,
     regs[TCG_REG_CALL_STACK] = (uintptr_t)stack;
     tci_assert(tb_ptr);
 
+#ifdef CONFIG_JOVE_HELPERS
+void _jove_dump_env(CPUArchState *);
+    if (getenv("JOVE_DUMP_ENV")) {
+      _jove_dump_env(env);
+      exit(EXIT_SUCCESS);
+    }
+#endif
+
     for (;;) {
         uint32_t insn;
         TCGOpcode opc;

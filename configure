@@ -270,6 +270,7 @@ unset target_list_exclude
 # because they automatically enable/disable other options
 tcg="auto"
 cfi="false"
+werror="true"
 
 # Meson has PIE as a boolean rather than enabled/disabled/auto,
 # and we also need to check for -static-pie before Meson runs
@@ -768,6 +769,8 @@ for opt do
   --enable-cfi) cfi=true
   ;;
   --disable-cfi) cfi=false
+  ;;
+  --disable-werror) werror="false"
   ;;
   --disable-download) download="disabled"; git_submodules_action=validate;
   ;;
@@ -1891,7 +1894,7 @@ if test "$skip_meson" = no; then
   echo "# the command line" >> $cross
   if test -e "$source_path/.git" && \
       { test "$host_os" = linux || test "$host_os" = "windows"; }; then
-      echo 'werror = true' >> $cross
+      echo "werror = $werror" >> $cross
   fi
   echo "[project options]" >> $cross
   if test "$SMBD" != ''; then

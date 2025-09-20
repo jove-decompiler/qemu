@@ -30,6 +30,11 @@
 #include "sve_ldst_internal.h"
 
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#endif
+
 static bool vectors_overlap(ARMVectorReg *x, unsigned nx,
                             ARMVectorReg *y, unsigned ny)
 {

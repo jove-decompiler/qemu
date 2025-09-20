@@ -36,6 +36,12 @@ option('trace_file', type: 'string', value: 'trace',
 option('coroutine_backend', type: 'combo',
        choices: ['ucontext', 'sigaltstack', 'windows', 'wasm', 'auto'],
        value: 'auto', description: 'coroutine backend to use')
+option('jove', type: 'boolean', value: false,
+       description: 'build for jove')
+option('jove_helpers', type: 'boolean', value: false,
+       description: 'build for jove (helpers)')
+option('ms_bitfields', type: 'boolean', value: false,
+       description: 'build with -mms-bitfields')
 
 # Everything else can be set via --enable/--disable-* option
 # on the configure script command line.  After adding an option

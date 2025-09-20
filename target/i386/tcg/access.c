@@ -53,6 +53,8 @@ void access_prepare(X86Access *ret, CPUX86State *env, vaddr vaddr,
     access_prepare_mmu(ret, env, vaddr, size, type, mmu_idx, ra);
 }
 
+#ifndef CONFIG_JOVE_HELPERS
+
 static void *access_ptr(X86Access *ac, vaddr addr, unsigned len)
 {
     vaddr offset = addr - ac->vaddr;
@@ -167,3 +169,5 @@ void access_stq(X86Access *ac, vaddr addr, uint64_t val)
         cpu_stq_le_mmuidx_ra(ac->env, addr, val, ac->mmu_idx, ac->ra);
     }
 }
+
+#endif /* CONFIG_JOVE_HELPERS */

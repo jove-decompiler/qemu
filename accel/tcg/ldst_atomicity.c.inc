@@ -152,6 +152,7 @@ static uint64_t load_atomic8_or_exit(CPUState *cpu, uintptr_t ra, void *pv)
         return load_atomic8(pv);
     }
 
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef CONFIG_USER_ONLY
     /*
      * If the page is not writable, then assume the value is immutable
@@ -165,6 +166,7 @@ static uint64_t load_atomic8_or_exit(CPUState *cpu, uintptr_t ra, void *pv)
             return *p;
         }
     }
+#endif
 #endif
 
     /* Ultimate fallback: re-execute in serial context. */
@@ -201,12 +203,18 @@ static Int128 load_atomic16_or_exit(CPUState *cpu, uintptr_t ra, void *pv)
      * the write is complete -- tests/tcg/multiarch/munmap-pthread.c
      * is an example that can race.
      */
+#ifdef CONFIG_JOVE_HELPERS
+    {
+#else
     WITH_MMAP_LOCK_GUARD() {
+#endif
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef CONFIG_USER_ONLY
         if (!page_check_range(h2g(p), 16, PAGE_WRITE_ORG)) {
             return *p;
         }
 #endif
+#endif /* CONFIG_JOVE_HELPERS */
         if (HAVE_ATOMIC128_RW) {
             return atomic16_read_rw(p);
         }
@@ -527,6 +535,10 @@ static uint64_t load_atom_8(CPUState *cpu, uintptr_t ra,
         g_assert_not_reached();
     }
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#endif
 
 /**
  * load_atom_16:

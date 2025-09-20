@@ -306,12 +306,26 @@ FIELD(CNTHCTL, CNTPMASK, 19, 1)
 G_NORETURN void raise_exception(CPUARMState *env, uint32_t excp,
                                 uint32_t syndrome, uint32_t target_el);
 
+#ifdef CONFIG_JOVE_HELPERS
+
+inline
+G_NORETURN void raise_exception_ra(CPUARMState *env, uint32_t excp,
+                                      uint32_t syndrome, uint32_t target_el,
+                                      uintptr_t ra) {
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 /*
  * Similarly, but also use unwinding to restore cpu state.
  */
 G_NORETURN void raise_exception_ra(CPUARMState *env, uint32_t excp,
                                       uint32_t syndrome, uint32_t target_el,
                                       uintptr_t ra);
+
+#endif /* CONFIG_JOVE_HELPERS */
 
 /*
  * For AArch64, map a given EL to an index in the banked_spsr array.
@@ -994,10 +1008,25 @@ ARMMMUIdx arm_v7m_mmu_idx_for_secstate(CPUARMState *env, bool secstate);
  */
 bool arm_s1_regime_using_lpae_format(CPUARMState *env, ARMMMUIdx mmu_idx);
 
+
+#ifdef CONFIG_JOVE_HELPERS
+
+G_NORETURN static inline void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
+                                                          MMUAccessType access_type,
+                                                          int mmu_idx, uintptr_t retaddr)
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+
+#else
+
 /* Raise a data fault alignment exception for the specified virtual address */
 G_NORETURN void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
                                             MMUAccessType access_type,
                                             int mmu_idx, uintptr_t retaddr);
+
+#endif
 
 #ifndef CONFIG_USER_ONLY
 /* arm_cpu_do_transaction_failed: handle a memory system error response
