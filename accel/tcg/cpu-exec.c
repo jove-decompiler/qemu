@@ -49,6 +49,8 @@
 
 #ifdef CONFIG_JOVE_HELPERS
 
+extern __thread CPUState *thread_cpu;
+
 void jove_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
   ((CPUState *)1UL)->cc->tcg_ops->translate_code(NULL, NULL, NULL, 0, NULL);
   tcg_type_size(TCGOP_TYPE(op));
@@ -129,6 +131,8 @@ void jove_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
 #else
     tcg_ctx->guest_mo = TCG_MO_ALL;
 #endif
+
+    thread_cpu = NULL;
   }
 }
 

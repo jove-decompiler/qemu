@@ -63,6 +63,7 @@
 #endif
 
 #ifdef CONFIG_JOVE
+#include "qemu/memalign.h"
 #include "jove.h"
 #endif
 
@@ -688,7 +689,24 @@ void _jove_dump_env(CPUArchState *);
 #endif
 
 #ifdef CONFIG_JOVE
-CPUState *jv_cpu = NULL;
+
+static CPUState *jv_cpu_init = NULL;
+
+CPUArchState *jv_new_cpu_state(void)
+{
+    const CPUArchState *const env = cpu_env(jv_cpu_init);
+    const CPUState *const cpu = env_cpu(env);
+
+    CPUState *const new_cpu =
+        qemu_memalign(16, sizeof(CPUState) + sizeof(CPUArchState));
+    CPUArchState *const new_env = cpu_env(new_cpu);
+
+    memcpy(new_cpu, cpu, sizeof(CPUState));
+    memcpy(new_env, env, sizeof(CPUArchState));
+
+    return new_env;
+}
+
 bool jv_is_mips_target =
 #ifdef TARGET_MIPS
     true
@@ -1077,7 +1095,15 @@ int main(int argc, char **argv, char **envp)
 #endif
 
 #ifdef CONFIG_JOVE
-    jv_cpu = cpu;
+    {
+      CPUState *const init_cpu =
+          qemu_memalign(16, sizeof(CPUState) + sizeof(CPUArchState));
+      jv_cpu_init = init_cpu;
+
+      memcpy(init_cpu, cpu, sizeof(CPUState));
+      memcpy(cpu_env(init_cpu), env, sizeof(CPUArchState));
+    }
+
     __jove_did = true; /* we got here */
 #else
     cpu_loop(env);
@@ -1089,12 +1115,12 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_JOVE_HELPERS
 
 void _jove_do_print_tcg_constants(unsigned taddr_bits,
-                                  const char **callconv_args,
-                                  const char **callconv_rets,
-                                  const char **not_args,
-                                  const char **not_rets,
-                                  const char **pinned,
-                                  const char **strarr);
+                                  const char *const *callconv_args,
+                                  const char *const *callconv_rets,
+                                  const char *const *not_args,
+                                  const char *const *not_rets,
+                                  const char *const *pinned,
+                                  const char *const *strarr);
 
 void _jove_print_tcg_constants(void) {
   static const char *const strarr[][2] = {
@@ -1193,8 +1219,8 @@ void _jove_print_tcg_constants(void) {
     "rip",
     NULL
   };
-  const char **not_ret_regs = &not_arg_or_ret_regs[0];
-  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+  const char *const *not_ret_regs = &not_arg_or_ret_regs[0];
+  const char *const *not_arg_regs = &not_arg_or_ret_regs[0];
 #elif defined(TARGET_I386)
   static const char *const not_arg_or_ret_regs[] = {
     "_frame",
@@ -1236,18 +1262,18 @@ void _jove_print_tcg_constants(void) {
     "eip",
     NULL
   };
-  const char **not_ret_regs = &not_arg_or_ret_regs[0];
-  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+  const char *const *not_ret_regs = &not_arg_or_ret_regs[0];
+  const char *const *not_arg_regs = &not_arg_or_ret_regs[0];
 #elif defined(TARGET_MIPS64)
-  static const char *not_arg_or_ret_regs[] = {
+  static const char *const not_arg_or_ret_regs[] = {
     "_frame",
     "env",
     "PC",
     NULL
   };
 
-  const char **not_ret_regs = &not_arg_or_ret_regs[0];
-  const char **not_arg_regs = &not_arg_or_ret_regs[0];
+  const char *const *not_ret_regs = &not_arg_or_ret_regs[0];
+  const char *const *not_arg_regs = &not_arg_or_ret_regs[0];
 #elif defined(TARGET_MIPS)
   static const char *const not_arg_regs[] = {
     "_frame",
