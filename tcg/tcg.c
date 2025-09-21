@@ -1284,8 +1284,17 @@ static const TCGOutOp * const all_outop[NB_OPS] = {
  */
 #ifdef CONFIG_USER_ONLY
 #ifdef CONFIG_JOVE
+extern __thread CPUState *thread_cpu;
+CPUArchState *jv_new_cpu_state(void);
+
 void tcg_register_thread(void)
 {
+    if (tcg_ctx) {
+      assert(thread_cpu);
+      return;
+    }
+    assert(!thread_cpu);
+
     TCGContext *s = g_malloc(sizeof(*s));
     unsigned int i, n;
 
@@ -1301,6 +1310,7 @@ void tcg_register_thread(void)
     }
 
     tcg_ctx = s;
+    thread_cpu = env_cpu(jv_new_cpu_state());
 }
 #else
 void tcg_register_thread(void)
@@ -2071,8 +2081,8 @@ static void _jove_print_global_set(TCGContext *s,
 }
 
 static void _jove_print_globals_as_array(TCGContext *s,
-                                         const char **glbarr) {
-  const char **glbp;
+                                         const char *const *glbarr) {
+  const char *const *glbp;
 
   for (glbp = glbarr; *glbp; ++glbp) {
     int idx = _jove_index_of_glb(*glbp);
@@ -2088,9 +2098,9 @@ static void _jove_print_globals_as_array(TCGContext *s,
 
 static unsigned _jove_load_global_set(TCGContext *s,
                                       jove_glbs_t *out,
-                                      const char **glbarr) {
+                                      const char *const *glbarr) {
   unsigned res = 0;
-  const char **glbp;
+  const char *const *glbp;
 
   for (glbp = glbarr; *glbp; ++glbp) {
     int idx = _jove_index_of_glb(*glbp);
@@ -2105,12 +2115,12 @@ static unsigned _jove_load_global_set(TCGContext *s,
 }
 
 void _jove_do_print_tcg_constants(unsigned taddr_bits,
-                                  const char **callconv_args,
-                                  const char **callconv_rets,
-                                  const char **not_args,
-                                  const char **not_rets,
-                                  const char **pinned,
-                                  const char **strarr) {
+                                  const char *const *callconv_args,
+                                  const char *const *callconv_rets,
+                                  const char *const *not_args,
+                                  const char *const *not_rets,
+                                  const char *const *pinned,
+                                  const char *const *strarr) {
   unsigned target_num_reg_args = 0;
   int env_idx = _jove_index_of_glb("env");
   assert(env_idx >= 0);
@@ -2186,7 +2196,7 @@ void _jove_do_print_tcg_constants(unsigned taddr_bits,
 
   _jove_print_lookup_by_mem_offset(s);
 
-  for (const char **p = strarr; p[0] && p[1]; p += 2) {
+  for (const char *const *p = strarr; p[0] && p[1]; p += 2) {
     printf("constexpr int tcg_%s_index(%d);\n", p[0], _jove_index_of_glb(p[1]));
   }
 
