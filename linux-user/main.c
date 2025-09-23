@@ -1451,3 +1451,17 @@ void _jove_dump_env(CPUArchState *env) {
 }
 
 #endif /* CONFIG_JOVE_HELPERS */
+
+#if defined(CONFIG_JOVE) && !defined(CONFIG_TARGET_XML_FILES)
+
+const GDBFeature gdb_static_features[] = {
+  { NULL }
+};
+
+#endif
+
+int qmp_block_resize(void) {
+  assert(false);
+  __builtin_trap();
+  __builtin_unreachable();
+}
