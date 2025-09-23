@@ -80,7 +80,7 @@ if have_system
   endif
 endif
 
-if have_block or have_ga
+if have_block or have_ga or get_option('jove')
   util_ss.add(files('aiocb.c', 'async.c'))
   util_ss.add(files('base64.c'))
   util_ss.add(files('main-loop.c'))
@@ -91,7 +91,7 @@ endif
 if have_block or have_ga or have_user
   util_ss.add(files('qemu-sockets.c'))
 endif
-if have_block
+if have_block or get_option('jove')
   util_ss.add(files('aio-wait.c'))
   util_ss.add(files('buffer.c'))
   util_ss.add(files('bufferiszero.c'))
