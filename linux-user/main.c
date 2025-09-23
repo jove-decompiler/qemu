@@ -698,11 +698,10 @@ CPUArchState *jv_new_cpu_state(void)
     const CPUState *const cpu = env_cpu(env);
 
     CPUState *const new_cpu =
-        qemu_memalign(16, sizeof(CPUState) + sizeof(CPUArchState));
+        qemu_memalign(16, sizeof(struct ArchCPU));
     CPUArchState *const new_env = cpu_env(new_cpu);
 
-    memcpy(new_cpu, cpu, sizeof(CPUState));
-    memcpy(new_env, env, sizeof(CPUArchState));
+    memcpy(new_cpu, cpu, sizeof(struct ArchCPU));
 
     return new_env;
 }
@@ -1097,11 +1096,10 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_JOVE
     {
       CPUState *const init_cpu =
-          qemu_memalign(16, sizeof(CPUState) + sizeof(CPUArchState));
+          qemu_memalign(16, sizeof(struct ArchCPU));
       jv_cpu_init = init_cpu;
 
-      memcpy(init_cpu, cpu, sizeof(CPUState));
-      memcpy(cpu_env(init_cpu), env, sizeof(CPUArchState));
+      memcpy(init_cpu, cpu, sizeof(struct ArchCPU));
     }
 
     __jove_did = true; /* we got here */
