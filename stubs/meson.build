@@ -26,7 +26,7 @@ if have_block
   stub_ss.add(files('uuid.c'))
 endif
 
-if have_block or have_ga
+if have_block or have_ga or get_option('jove')
   stub_ss.add(files('replay-tools.c'))
   # stubs for hooks in util/main-loop.c, util/async.c etc.
   stub_ss.add(files('cpus-virtual-clock.c'))

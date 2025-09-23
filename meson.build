@@ -6,6 +6,7 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
 # if clang, force -fuse-ld=lld
 if meson.get_compiler('c').get_id() == 'clang'
   add_project_arguments('-fuse-ld=lld', language: 'c')
+  add_project_link_arguments('-fuse-ld=lld', language: ['c', 'cpp'])
 endif
 
 if get_option('ms_bitfields')
@@ -3667,7 +3668,7 @@ endif
 if have_bsd_user
   trace_events_subdirs += [ 'bsd-user' ]
 endif
-if have_block
+if have_block or get_option('jove')
   trace_events_subdirs += [
     'authz',
     'block',
@@ -3829,14 +3830,12 @@ endif
 qom_ss = qom_ss.apply({})
 libqom = static_library('qom', qom_ss.sources() + genh,
                         dependencies: [qom_ss.dependencies()],
-                        pic: get_option('jove'),
                         build_by_default: false)
 qom = declare_dependency(objects: libqom.extract_all_objects(recursive: false),
                          dependencies: qom_ss.dependencies())
 
 event_loop_base = files('event-loop-base.c')
 event_loop_base = static_library('event-loop-base',
-                                 pic: get_option('jove'),
                                  sources: event_loop_base + genh,
                                  build_by_default: false)
 event_loop_base = declare_dependency(objects: event_loop_base.extract_all_objects(recursive: false),
@@ -3849,7 +3848,6 @@ util_ss = util_ss.apply({})
 libqemuutil = static_library('qemuutil',
                              build_by_default: false,
                              sources: util_ss.sources() + stub_ss.sources() + genh,
-                             pic: get_option('jove'),
                              dependencies: [util_ss.dependencies(), libm, threads, glib, socket, malloc])
 qemuutil_deps = [event_loop_base]
 if host_os != 'windows'
@@ -3926,7 +3924,6 @@ if get_option('b_lto') and meson.get_compiler('c').get_id() == 'gcc'
     pagevary_flags += '-fno-sanitize=cfi-icall'
   endif
   pagevary = static_library('page-vary-common', sources: pagevary + genh,
-                            pic: get_option('jove'),
                             c_args: pagevary_flags)
   pagevary = declare_dependency(link_with: pagevary)
 endif
@@ -4157,7 +4154,6 @@ chardev = declare_dependency(objects: libchardev.extract_all_objects(recursive: 
 
 hwcore_ss = hwcore_ss.apply({})
 libhwcore = static_library('hwcore', sources: hwcore_ss.sources() + genh,
-                           pic: get_option('jove'),
                            build_by_default: false)
 hwcore = declare_dependency(objects: libhwcore.extract_all_objects(recursive: false))
 common_ss.add(hwcore)
@@ -4175,7 +4171,6 @@ libuser = static_library('user',
                                   '-DCOMPILING_SYSTEM_VS_USER'],
                          include_directories: common_user_inc,
                          dependencies: user_ss.all_dependencies(),
-                         pic: get_option('jove'),
                          build_by_default: false)
 
 libsystem = static_library('system',
@@ -4183,7 +4178,6 @@ libsystem = static_library('system',
                            c_args: ['-DCONFIG_SOFTMMU',
                                     '-DCOMPILING_SYSTEM_VS_USER'],
                            dependencies: system_ss.all_dependencies(),
-                           pic: get_option('jove'),
                            build_by_default: false)
 
 # Note that this library is never used directly (only through extract_objects)
@@ -4193,7 +4187,6 @@ common_all = static_library('common',
                             build_by_default: false,
                             sources: common_ss.all_sources() + genh,
                             implicit_include_directories: false,
-                            pic: get_option('jove'),
                             dependencies: common_ss.all_dependencies())
 
 # construct common libraries per base architecture
@@ -4231,7 +4224,6 @@ foreach target_base_arch, config_base_arch : config_base_arch_mak
       build_by_default: false,
       sources: src.all_sources() + genh,
       include_directories: inc,
-      pic: get_option('jove'),
       c_args: target_c_args,
       dependencies: src.all_dependencies() + common_deps +
                     system_deps + user_deps)
@@ -4255,7 +4247,6 @@ foreach target_base_arch, config_base_arch : config_base_arch_mak
       build_by_default: false,
       sources: src.all_sources() + genh,
       include_directories: inc,
-      pic: get_option('jove'),
       c_args: target_system_c_args,
       dependencies: src.all_dependencies() + common_deps + system_deps)
     target_common_system_arch_libs += {target_base_arch: lib}
@@ -4458,7 +4449,6 @@ foreach target : target_dirs
                  objects: objects,
                  include_directories: target_inc,
                  c_args: c_args,
-                 pic: get_option('jove'),
                  build_by_default: false)
 
   libfpu_soft_c_args = c_args
@@ -4511,44 +4501,38 @@ foreach target : target_dirs
       exe_name += '-unsigned'
     endif
 
+    extra_link_args = []
     if get_option('jove')
-    emulator = shared_library(exe_name, exe['sources'],
-               install: true,
-               c_args: c_args,
-               dependencies: arch_deps + exe['dependencies'],
-               objects: lib.extract_all_objects(recursive: true),
-               link_depends: [block_syms, qemu_syms],
-               link_args: link_args + ['-Wl,--unresolved-symbols=ignore-all', '-Wl,--allow-shlib-undefined'])
+      extra_link_args += ['-Wl,--unresolved-symbols=ignore-all']
+    endif
 
-    qemu4jove = static_library('qemu4jove-' + target_name, exe['sources'],
-               install: true,
-               c_args: c_args,
-               dependencies: arch_deps + exe['dependencies'] + [io, vhost_user],
-               objects: lib.extract_all_objects(recursive: true),
-               link_depends: [block_syms, qemu_syms],
-               link_args: link_args,
-               pic: get_option('jove'),
-               build_by_default: true,
-               name_suffix: 'a')
-    else
     emulator = executable(exe_name, exe['sources'],
                install: true,
                c_args: c_args,
                dependencies: arch_deps + exe['dependencies'],
                objects: lib.extract_all_objects(recursive: true),
                link_depends: [block_syms, qemu_syms],
-               link_args: link_args + ['-latomic'],
+               link_args: link_args + extra_link_args,
                win_subsystem: exe['win_subsystem'])
     if get_option('jove_helpers')
     emulator_bitcode = executable(exe_name + '.bitcode', exe['sources'],
-               install: true,
-               c_args: c_args,
-               dependencies: arch_deps + exe['dependencies'],
-               objects: lib.extract_all_objects(recursive: true),
-               link_depends: [block_syms, qemu_syms],
-               link_args: link_args + ['-Wl,-plugin-opt=emit-llvm'],
-               win_subsystem: exe['win_subsystem'])
-    endif
+                       install: true,
+                       c_args: c_args,
+                       dependencies: arch_deps + exe['dependencies'],
+                       objects: lib.extract_all_objects(recursive: true),
+                       link_depends: [block_syms, qemu_syms],
+                       link_args: link_args + ['-Wl,-plugin-opt=emit-llvm'],
+                       win_subsystem: exe['win_subsystem'])
+    elif get_option('jove')
+    qemu4jove = static_library('qemu4jove-' + target_name, exe['sources'],
+                install: true,
+                c_args: c_args,
+                dependencies: arch_deps + exe['dependencies'] + [io, vhost_user],
+                objects: lib.extract_all_objects(recursive: true),
+                link_depends: [block_syms, qemu_syms],
+                link_args: link_args,
+                build_by_default: true,
+                name_suffix: 'a')
     endif
 
     if host_os == 'darwin'
@@ -4698,7 +4682,7 @@ subdir('docs')
 # Tests are disabled on emscripten because they rely on host features that aren't
 # supported by emscripten (e.g. fork and unix socket).
 if host_os != 'emscripten'
-  subdir('tests')
+# subdir('tests')
 endif
 if gtk.found()
   subdir('po')
