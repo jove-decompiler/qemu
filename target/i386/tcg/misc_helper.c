@@ -115,7 +115,7 @@ void helper_rdtsc(CPUX86State *env)
 
 #ifdef CONFIG_JOVE_HELPERS
 
-G_NORETURN void helper_rdpmc(CPUX86State *env)
+void helper_rdpmc(CPUX86State *env)
 {
     uint32_t counter = env->regs[R_ECX];
 
@@ -146,7 +146,7 @@ G_NORETURN void helper_rdpmc(CPUX86State *env)
 
 #ifdef CONFIG_JOVE_HELPERS
 
-G_NORETURN void helper_pause(CPUX86State *env)
+void helper_pause(CPUX86State *env)
 {
     asm volatile("pause");
 }
