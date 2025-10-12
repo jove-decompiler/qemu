@@ -703,7 +703,7 @@ void signal_init(const char *rtsig_map)
 
     sigaction(host_interrupt_signal, &act, NULL);
 
-#if !defined(CONFIG_JOVE) && !defined(CONFIG_JOVE_HELPERS)
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
 #undef sigaction
 #endif
 }

@@ -4,7 +4,7 @@
  * This one expands prototypes for the helper functions.
  */
 
-#if !defined(HELPER_PROTO_COMMON_H) || defined(HELPER_PROTO_H_INC_FOR_JOVE)
+#ifndef HELPER_PROTO_COMMON_H
 #define HELPER_PROTO_COMMON_H
 
 #include "qemu/atomic128.h"  /* for HAVE_CMPXCHG128 */
