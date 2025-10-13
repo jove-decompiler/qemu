@@ -39,6 +39,7 @@
  * rcu_unregister_thread() should be called before the thread exits.
  */
 
+#define DEBUG_RCU 1
 #ifdef DEBUG_RCU
 #define rcu_assert(args...)    assert(args)
 #else
