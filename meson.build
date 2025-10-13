@@ -4533,6 +4533,39 @@ foreach target : target_dirs
                 link_args: link_args,
                 build_by_default: true,
                 name_suffix: 'a')
+
+    bc_name = 'qemu4jove-' + target_name + '.bc'
+    native_name = 'libqemu4jove-' + target_name + '-native.a'
+
+    qemu4jove_bitcode = custom_target(
+      'qemu4jove-bitcode-' + target_name,
+      input: qemu4jove,
+      output: [bc_name, native_name],
+      command: [
+        find_program('scripts/split_ar_to_bc.py'),
+        '--archive',    join_paths(meson.project_build_root(), '@INPUT@'),
+        '--out-bc',     join_paths(meson.current_build_dir(), '@OUTPUT0@'),
+        '--out-native', join_paths(meson.current_build_dir(), '@OUTPUT1@'),
+        '--llvm-ar',    get_option('llvm_ar'),
+        '--llvm-link',  get_option('llvm_link'),
+      ],
+      console: true,
+      build_by_default: true
+    )
+
+    qemu4jove_bitcode_cut = custom_target(
+      'qemu4jove-bitcode-cut-' + target_name,
+      input: qemu4jove_bitcode[0],
+      output: 'qemu4jove-' + target_name + '.cut.bc',
+      command: [
+        find_program('llknife-19'),
+        '-i', '@INPUT@',
+        '-o', '@OUTPUT@',
+        '--move-ctors-and-dtors',
+      ],
+      console: true,
+      build_by_default: true
+    )
     endif
 
     if host_os == 'darwin'

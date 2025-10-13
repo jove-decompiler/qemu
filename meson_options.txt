@@ -42,6 +42,10 @@ option('jove_helpers', type: 'boolean', value: false,
        description: 'build for jove (helpers)')
 option('ms_bitfields', type: 'boolean', value: false,
        description: 'build with -mms-bitfields')
+option('llvm_ar', type: 'string', value: '',
+       description: 'path to llvm-ar')
+option('llvm_link', type: 'string', value: '',
+       description: 'path to llvm-link')
 
 # Everything else can be set via --enable/--disable-* option
 # on the configure script command line.  After adding an option
