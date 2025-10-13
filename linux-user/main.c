@@ -714,6 +714,14 @@ bool jv_is_mips_target =
 #endif
     ;
 
+#ifdef CONFIG_JOVE
+#ifndef TARGET_MIPS
+bool jv_are_on_delay_slot(DisasContextBase *dcbase) {
+  abort();
+}
+#endif
+#endif
+
 static void _jove_check_did(const bool *did) {
   if (!(*did)) {
     printf("(BUG) !_jove_check_did\n");
