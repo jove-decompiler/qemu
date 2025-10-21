@@ -3226,7 +3226,11 @@ void tcg_gen_exit_tb(const TranslationBlock *tb, unsigned idx)
      * This requires coordination with targets that do not use
      * the translator_loop.
      */
+#ifdef CONFIG_JOVE
+    uintptr_t val = 0xdeadbeef;
+#else
     uintptr_t val = (uintptr_t)tcg_splitwx_to_rx((void *)tb) + idx;
+#endif
 
     if (tb == NULL) {
         tcg_debug_assert(idx == 0);
