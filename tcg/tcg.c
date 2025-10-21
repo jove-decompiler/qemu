@@ -1289,14 +1289,14 @@ CPUArchState *jv_new_cpu_state(void);
 
 void tcg_register_thread(void)
 {
-    if (tcg_ctx) {
-      assert(thread_cpu);
-      return;
-    }
-    assert(!thread_cpu);
-
     TCGContext *s = g_malloc(sizeof(*s));
     unsigned int i, n;
+
+    {
+      TCGContext *const s = tcg_ctx;
+      if (s)
+        assert(s == &tcg_init_ctx);
+    }
 
     *s = tcg_init_ctx;
 
