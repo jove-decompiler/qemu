@@ -5,7 +5,7 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
 
 # if clang, force -fuse-ld=lld
 if meson.get_compiler('c').get_id() == 'clang'
-  add_project_arguments('-fuse-ld=lld', language: 'c')
+  add_project_arguments(['-fuse-ld=lld', '-fexceptions'], language: 'c')
   add_project_link_arguments('-fuse-ld=lld', language: ['c', 'cpp'])
 endif
 
