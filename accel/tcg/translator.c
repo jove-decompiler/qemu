@@ -425,7 +425,7 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
     return true;
 }
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#if defined(CONFIG_JOVE_HELPERS)
 
 static void record_save(DisasContextBase *db, vaddr pc,
                         const void *from, int size) {}
