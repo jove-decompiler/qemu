@@ -674,6 +674,14 @@ vaddr page_find_range_empty(vaddr min, vaddr max, vaddr len, vaddr align)
     }
 }
 
+#if defined(CONFIG_JOVE)
+
+void tb_lock_page0(tb_page_addr_t address)
+{
+}
+
+#else
+
 void tb_lock_page0(tb_page_addr_t address)
 {
     PageFlagsNode *p;
@@ -711,6 +719,8 @@ void tb_lock_page0(tb_page_addr_t address)
                  prot & (PAGE_READ | PAGE_EXEC) ? PROT_READ : PROT_NONE);
     }
 }
+
+#endif
 
 /*
  * Called from signal handler: invalidate the code and unprotect the
@@ -802,7 +812,7 @@ int page_unprotect(CPUState *cpu, tb_page_addr_t address, uintptr_t pc)
     return current_tb_invalidated ? 2 : 1;
 }
 
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) || defined(CONFIG_JOVE)
 
 static int probe_access_internal(CPUArchState *env, vaddr addr,
                                  int fault_size, MMUAccessType access_type,
@@ -814,9 +824,6 @@ static int probe_access_internal(CPUArchState *env, vaddr addr,
                                  int fault_size, MMUAccessType access_type,
                                  bool nonfault, uintptr_t ra)
 {
-#ifdef CONFIG_JOVE
-    return 0;
-#else
     int acc_flag;
     bool maperr;
 
@@ -853,7 +860,6 @@ static int probe_access_internal(CPUArchState *env, vaddr addr,
     }
 
     cpu_loop_exit_sigsegv(env_cpu(env), addr, access_type, maperr, ra);
-#endif
 }
 
 #endif /* CONFIG_JOVE_HELPERS */
