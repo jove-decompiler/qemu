@@ -399,6 +399,30 @@ static void page_unlock(PageDesc *pd)
     page_unlock__debug(pd);
 }
 
+#ifdef CONFIG_JOVE
+
+void tb_lock_page0(tb_page_addr_t paddr)
+{
+}
+
+void tb_lock_page1(tb_page_addr_t paddr0, tb_page_addr_t paddr1)
+{
+}
+
+void tb_unlock_page1(tb_page_addr_t paddr0, tb_page_addr_t paddr1)
+{
+}
+
+static void tb_lock_pages(TranslationBlock *tb)
+{
+}
+
+void tb_unlock_pages(TranslationBlock *tb)
+{
+}
+
+#else
+
 void tb_lock_page0(tb_page_addr_t paddr)
 {
     page_lock(page_find_alloc(paddr >> TARGET_PAGE_BITS, true));
@@ -484,6 +508,8 @@ void tb_unlock_pages(TranslationBlock *tb)
     }
     page_unlock(page_find_alloc(pindex0, false));
 }
+
+#endif
 
 static inline struct page_entry *
 page_entry_new(PageDesc *pd, tb_page_addr_t index)
