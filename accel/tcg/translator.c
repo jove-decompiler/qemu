@@ -185,6 +185,10 @@ void translator_loop(CPUState *cpu, TranslationBlock *tb, int *max_insns,
         if (first_insn_start == NULL) {
             first_insn_start = db->insn_start;
         }
+
+#ifdef CONFIG_JOVE
+        if (!isMipsTarget) /* XXX delay slot */
+#endif
         tcg_debug_assert(db->is_jmp == DISAS_NEXT);  /* no early exit */
 
         if (plugin_enabled) {
