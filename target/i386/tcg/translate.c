@@ -1688,9 +1688,7 @@ static uint64_t advance_pc(CPUX86State *env, DisasContext *s, int num_bytes)
     s->pc += num_bytes;
     if (unlikely(cur_insn_len(s) > X86_MAX_INSN_LENGTH)) {
 #ifdef CONFIG_JOVE
-        assert(false && "X86_MAX_INSN_LENGTH");
-        __builtin_trap();
-        __builtin_unreachable();
+        abort();
 #endif
 
         /* If the instruction's 16th byte is on a different page than the 1st, a
@@ -3891,7 +3889,7 @@ static void i386_tr_translate_insn(DisasContextBase *dcbase, CPUState *cpu)
         break;
     case 2:
 #ifdef CONFIG_JOVE
-        assert(false && "should never get here");
+        abort();
 #endif
         /* Restore state that may affect the next instruction. */
         dc->pc = dc->base.pc_next;
