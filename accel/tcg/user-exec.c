@@ -236,8 +236,6 @@ void page_dump(FILE *f)
     walk_memory_regions(f, dump_region);
 }
 
-#if !defined(CONFIG_JOVE_HELPERS) && !defined(CONFIG_JOVE)
-
 int page_get_flags(vaddr address)
 {
     PageFlagsNode *p = pageflags_find(address, address);
@@ -259,8 +257,6 @@ int page_get_flags(vaddr address)
     mmap_unlock();
     return p ? p->flags : 0;
 }
-
-#endif
 
 /* A subroutine of page_set_flags: insert a new node for [start,last]. */
 static void pageflags_create(vaddr start, vaddr last, int flags)
@@ -509,14 +505,6 @@ static bool pageflags_set_clear(vaddr start, vaddr last,
     return inval_tb;
 }
 
-#ifdef CONFIG_JOVE
-
-void page_set_flags(vaddr start, vaddr last, int flags)
-{
-}
-
-#else
-
 void page_set_flags(vaddr start, vaddr last, int flags)
 {
     bool reset = false;
@@ -556,8 +544,6 @@ void page_set_flags(vaddr start, vaddr last, int flags)
         tb_invalidate_phys_range(NULL, start, last);
     }
 }
-
-#endif
 
 bool page_check_range(vaddr start, vaddr len, int flags)
 {
@@ -684,14 +670,6 @@ vaddr page_find_range_empty(vaddr min, vaddr max, vaddr len, vaddr align)
     }
 }
 
-#if defined(CONFIG_JOVE)
-
-void tb_lock_page0(tb_page_addr_t address)
-{
-}
-
-#else
-
 void tb_lock_page0(tb_page_addr_t address)
 {
     PageFlagsNode *p;
@@ -729,8 +707,6 @@ void tb_lock_page0(tb_page_addr_t address)
                  prot & (PAGE_READ | PAGE_EXEC) ? PROT_READ : PROT_NONE);
     }
 }
-
-#endif
 
 /*
  * Called from signal handler: invalidate the code and unprotect the
@@ -822,7 +798,7 @@ int page_unprotect(CPUState *cpu, tb_page_addr_t address, uintptr_t pc)
     return current_tb_invalidated ? 2 : 1;
 }
 
-#if defined(CONFIG_JOVE_HELPERS) || defined(CONFIG_JOVE)
+#if defined(CONFIG_JOVE_HELPERS)
 
 static int probe_access_internal(CPUArchState *env, vaddr addr,
                                  int fault_size, MMUAccessType access_type,

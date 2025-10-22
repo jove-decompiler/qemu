@@ -17,11 +17,7 @@
 
 int page_unprotect(CPUState *cpu, tb_page_addr_t address, uintptr_t pc);
 
-#if defined(CONFIG_JOVE_HELPERS) || defined(CONFIG_JOVE)
-static inline int page_get_flags(vaddr address) { return 0; }
-#else
 int page_get_flags(vaddr address);
-#endif
 
 /**
  * page_set_flags:

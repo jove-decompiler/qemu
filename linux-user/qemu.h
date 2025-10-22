@@ -170,7 +170,7 @@ ssize_t do_guest_readlink(const char *pathname, char *buf, size_t bufsiz);
 #define VERIFY_READ  PAGE_READ
 #define VERIFY_WRITE (PAGE_READ | PAGE_WRITE)
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#if defined(CONFIG_JOVE_HELPERS)
 
 static inline bool access_ok_untagged(int type, abi_ulong addr, abi_ulong size)
 {
