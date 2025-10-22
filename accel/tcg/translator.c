@@ -22,6 +22,7 @@
 #include "tb-internal.h"
 
 #ifdef CONFIG_JOVE
+#include "boost/preprocessor/repetition/repeat.hpp"
 #include "jove.h"
 #endif
 
@@ -311,14 +312,25 @@ extern bool jv_are_on_delay_slot(DisasContextBase *);
 
 void *_jv_g2h(uint64_t Addr);
 
+__attribute__((always_inline))
 static bool translator_ld(CPUArchState *env, DisasContextBase *db,
                           void *dest, vaddr pc, size_t len)
 {
     const void *host = _jv_g2h(pc);
-    if (!host)
-      return false;
+    if (unlikely(!host))
+      abort();
 
-    memcpy(dest, host, len);
+    switch (len) {
+    default:
+      memcpy(dest, host, len);
+      break;
+
+#define LEN_CASE(n, idx, data) \
+    case idx: __builtin_memcpy_inline(dest, host, idx); break;
+
+      BOOST_PP_REPEAT(65, LEN_CASE, void)
+    }
+
     return true;
 }
 

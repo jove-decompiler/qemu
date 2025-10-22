@@ -3953,6 +3953,10 @@ endif
 
 common_user_inc = []
 
+if get_option('jove')
+  common_user_inc += include_directories('../boost/libs/preprocessor/include')
+endif
+
 subdir('common-user')
 subdir('bsd-user')
 subdir('linux-user')
