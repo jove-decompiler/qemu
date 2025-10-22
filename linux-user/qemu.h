@@ -170,6 +170,21 @@ ssize_t do_guest_readlink(const char *pathname, char *buf, size_t bufsiz);
 #define VERIFY_READ  PAGE_READ
 #define VERIFY_WRITE (PAGE_READ | PAGE_WRITE)
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+
+static inline bool access_ok_untagged(int type, abi_ulong addr, abi_ulong size)
+{
+    return true;
+}
+
+static inline bool access_ok(CPUState *cpu, int type,
+                             abi_ulong addr, abi_ulong size)
+{
+    return true;
+}
+
+#else
+
 static inline bool access_ok_untagged(int type, abi_ulong addr, abi_ulong size)
 {
     if (size == 0
@@ -185,6 +200,8 @@ static inline bool access_ok(CPUState *cpu, int type,
 {
     return access_ok_untagged(type, cpu_untagged_addr(cpu, addr), size);
 }
+
+#endif
 
 /* NOTE __get_user and __put_user use host pointers and don't check access.
    These are usually used to access struct data members once the struct has
