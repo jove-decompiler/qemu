@@ -69,10 +69,8 @@ static inline void *g2h_untagged(vaddr x)
     void *y = _jv_g2h(x);
     if (y)
       return y;
-    return (void *)x;
-#else
-    return (void *)((uintptr_t)(x) + guest_base);
 #endif
+    return (void *)((uintptr_t)(x) + guest_base);
 }
 
 #endif
@@ -103,14 +101,6 @@ static inline bool guest_range_valid_untagged(vaddr start, vaddr len)
 
 #else /* !CONFIG_JOVE_HELPERS */
 
-#ifdef CONFIG_JOVE
-
-#define h2g_valid(x) true
-
-#define h2g_nocheck(x) ((vaddr)x)
-
-#else /* !CONFIG_JOVE */
-
 #define h2g_valid(x) \
     ((uintptr_t)(x) - guest_base <= guest_addr_max)
 
@@ -118,8 +108,6 @@ static inline bool guest_range_valid_untagged(vaddr start, vaddr len)
     uintptr_t __ret = (uintptr_t)(x) - guest_base; \
     (vaddr)__ret; \
 })
-
-#endif /* CONFIG_JOVE */
 
 #endif /* CONFIG_JOVE_HELPERS */
 
