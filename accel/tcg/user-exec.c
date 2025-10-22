@@ -236,7 +236,7 @@ void page_dump(FILE *f)
     walk_memory_regions(f, dump_region);
 }
 
-#ifndef CONFIG_JOVE_HELPERS
+#if !defined(CONFIG_JOVE_HELPERS) && !defined(CONFIG_JOVE)
 
 int page_get_flags(vaddr address)
 {
@@ -509,6 +509,14 @@ static bool pageflags_set_clear(vaddr start, vaddr last,
     return inval_tb;
 }
 
+#ifdef CONFIG_JOVE
+
+void page_set_flags(vaddr start, vaddr last, int flags)
+{
+}
+
+#else
+
 void page_set_flags(vaddr start, vaddr last, int flags)
 {
     bool reset = false;
@@ -548,6 +556,8 @@ void page_set_flags(vaddr start, vaddr last, int flags)
         tb_invalidate_phys_range(NULL, start, last);
     }
 }
+
+#endif
 
 bool page_check_range(vaddr start, vaddr len, int flags)
 {
