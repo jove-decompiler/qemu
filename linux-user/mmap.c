@@ -38,6 +38,23 @@
 static pthread_mutex_t mmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread int mmap_lock_count;
 
+#ifdef CONFIG_JOVE
+
+void mmap_lock(void)
+{
+}
+
+void mmap_unlock(void)
+{
+}
+
+bool have_mmap_lock(void)
+{
+    abort();
+}
+
+#else
+
 void mmap_lock(void)
 {
     if (mmap_lock_count++ == 0) {
@@ -57,6 +74,8 @@ bool have_mmap_lock(void)
 {
     return mmap_lock_count > 0 ? true : false;
 }
+
+#endif
 
 /* Grab lock to make sure things are in a consistent state after fork().  */
 void mmap_fork_start(void)
