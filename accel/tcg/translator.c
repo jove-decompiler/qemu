@@ -307,6 +307,23 @@ extern bool jv_are_on_delay_slot(DisasContextBase *);
     }
 }
 
+#ifdef CONFIG_JOVE
+
+void *_jv_g2h(uint64_t Addr);
+
+static bool translator_ld(CPUArchState *env, DisasContextBase *db,
+                          void *dest, vaddr pc, size_t len)
+{
+    const void *host = _jv_g2h(pc);
+    if (!host)
+      return false;
+
+    memcpy(dest, host, len);
+    return true;
+}
+
+#else
+
 static bool translator_ld(CPUArchState *env, DisasContextBase *db,
                           void *dest, vaddr pc, size_t len)
 {
@@ -428,6 +445,7 @@ static bool translator_ld(CPUArchState *env, DisasContextBase *db,
     memcpy(dest, host, len);
     return true;
 }
+#endif
 
 #if defined(CONFIG_JOVE_HELPERS)
 
