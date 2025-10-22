@@ -298,7 +298,10 @@ static void *call_rcu_thread(void *opaque)
             }
 
             n--;
-            node->func(node);
+
+            RCUCBFunc *to_call = node->func;
+            assert(to_call);
+            to_call(node);
         }
         bql_unlock();
     }
