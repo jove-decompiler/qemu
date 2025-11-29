@@ -1574,14 +1574,30 @@ static void gen_BZHI(DisasContext *s, X86DecodedInsn *decode)
 
 static void gen_CALL(DisasContext *s, X86DecodedInsn *decode)
 {
+#ifdef CONFIG_JOVE
+    gen_push_v_PCRel = true;
+#endif
+
     gen_push_v(s, eip_next_tl(s));
     gen_JMP(s, decode);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_call((s->pc + decode->immediate) - s->cs_base, s->pc - s->cs_base);
+#endif
 }
 
 static void gen_CALL_m(DisasContext *s, X86DecodedInsn *decode)
 {
+#ifdef CONFIG_JOVE
+    gen_push_v_PCRel = true;
+#endif
+
     gen_push_v(s, eip_next_tl(s));
     gen_JMP_m(s, decode);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_ind_call(s->pc - s->cs_base);
+#endif
 }
 
 static void gen_CALLF(DisasContext *s, X86DecodedInsn *decode)
@@ -2257,6 +2273,10 @@ static void gen_INSERTQ_r(DisasContext *s, X86DecodedInsn *decode)
 static void gen_INT(DisasContext *s, X86DecodedInsn *decode)
 {
     gen_interrupt(s, decode->immediate);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_none(s->pc - s->cs_base);
+#endif
 }
 
 static void gen_INT1(DisasContext *s, X86DecodedInsn *decode)
@@ -2270,6 +2290,10 @@ static void gen_INT1(DisasContext *s, X86DecodedInsn *decode)
 static void gen_INT3(DisasContext *s, X86DecodedInsn *decode)
 {
     gen_interrupt(s, EXCP03_INT3);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_none(s->pc - s->cs_base);
+#endif
 }
 
 static void gen_INTO(DisasContext *s, X86DecodedInsn *decode)
@@ -2313,6 +2337,10 @@ static void gen_JMP(DisasContext *s, X86DecodedInsn *decode)
 {
     gen_update_cc_op(s);
     gen_jmp_rel(s, s->dflag, decode->immediate, 0);
+
+#ifdef CONFIG_JOVE
+    jv_term_is_uncond_jump((s->pc + decode->immediate) - s->cs_base);
+#endif
 }
 
 static void gen_JMP_m(DisasContext *s, X86DecodedInsn *decode)
@@ -2320,6 +2348,10 @@ static void gen_JMP_m(DisasContext *s, X86DecodedInsn *decode)
     gen_op_jmp_v(s, s->T0);
     gen_bnd_jmp(s);
     s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+    jv_term_is_ind_jump();
+#endif
 }
 
 static void gen_JMPF(DisasContext *s, X86DecodedInsn *decode)
@@ -2820,7 +2852,10 @@ static void gen_PAUSE(DisasContext *s, X86DecodedInsn *decode)
     gen_update_cc_op(s);
     gen_update_eip_next(s);
     gen_helper_pause(tcg_env);
+
+#ifndef CONFIG_JOVE
     s->base.is_jmp = DISAS_NORETURN;
+#endif
 }
 
 static void gen_PCMPESTRI(DisasContext *s, X86DecodedInsn *decode)
@@ -3572,7 +3607,10 @@ static void gen_RDPMC(DisasContext *s, X86DecodedInsn *decode)
     gen_update_eip_cur(s);
     translator_io_start(&s->base);
     gen_helper_rdpmc(tcg_env);
+
+#ifndef CONFIG_JOVE
     s->base.is_jmp = DISAS_NORETURN;
+#endif
 }
 
 static void gen_RDTSC(DisasContext *s, X86DecodedInsn *decode)
@@ -3601,6 +3639,10 @@ static void gen_RET(DisasContext *s, X86DecodedInsn *decode)
     gen_op_jmp_v(s, s->T0);
     gen_bnd_jmp(s);
     s->base.is_jmp = DISAS_JUMP;
+
+#ifdef CONFIG_JOVE
+    jv_term_is_return();
+#endif
 }
 
 static void gen_RETF(DisasContext *s, X86DecodedInsn *decode)

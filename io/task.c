@@ -23,7 +23,18 @@
 #include "qapi/error.h"
 #include "qemu/thread.h"
 #include "qom/object.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_task_new(...)                  do {} while (false)
+#define trace_qio_task_thread_result(...)        do {} while (false)
+#define trace_qio_task_thread_run(...)           do {} while (false)
+#define trace_qio_task_thread_exit(...)          do {} while (false)
+#define trace_qio_task_thread_start(...)         do {} while (false)
+#define trace_qio_task_thread_source_cancel(...) do {} while (false)
+#define trace_qio_task_thread_source_attach(...) do {} while (false)
+#define trace_qio_task_complete(...)             do {} while (false)
+#endif
 
 struct QIOTaskThreadData {
     QIOTaskWorker worker;

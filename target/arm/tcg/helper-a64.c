@@ -37,11 +37,19 @@
 #include "qemu/int128.h"
 #include "qemu/atomic128.h"
 #include "fpu/softfloat.h"
+#if !(defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS))
 #include <zlib.h> /* for crc32 */
+#endif
 #ifdef CONFIG_USER_ONLY
 #include "user/page-protection.h"
 #endif
 #include "vec_internal.h"
+
+#ifdef CONFIG_JOVE_HELPERS
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#define memmove __builtin_memmove
+#endif
 
 /* C2.4.7 Multiply and divide */
 /* special cases for 0 and LLONG_MIN are mandated by the standard */
@@ -404,6 +412,11 @@ AH_MINMAX_HELPER(vfp_ah_maxs, float32, float32, max)
 AH_MINMAX_HELPER(vfp_ah_maxd, float64, float64, max)
 AH_MINMAX_HELPER(sme2_ah_fmax_b16, bfloat16, bfloat16, max)
 AH_MINMAX_HELPER(sme2_ah_fmin_b16, bfloat16, bfloat16, min)
+
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#undef crc32
+#include "linux_aarch64_crc32.c"
+#endif
 
 /* 64-bit versions of the CRC helpers. Note that although the operation
  * (and the prototypes of crc32c() and crc32() mean that only the bottom

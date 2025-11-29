@@ -21,7 +21,9 @@
 #include "qemu/osdep.h"
 #include "authz/base.h"
 #include "qemu/module.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#endif
 
 bool qauthz_is_allowed(QAuthZ *authz,
                        const char *identity,
@@ -31,7 +33,9 @@ bool qauthz_is_allowed(QAuthZ *authz,
     bool allowed;
 
     allowed = cls->is_allowed(authz, identity, errp);
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
     trace_qauthz_is_allowed(authz, identity, allowed);
+#endif
 
     return allowed;
 }

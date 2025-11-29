@@ -27,14 +27,36 @@
 
 G_NORETURN void helper_raise_interrupt(CPUX86State *env, int intno,
                                           int next_eip_addend)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    (void)env->regs[R_EBX];
+    (void)env->regs[R_ECX];
+    (void)env->regs[R_EDX];
+    (void)env->regs[R_ESI];
+    (void)env->regs[R_EDI];
+    (void)env->regs[R_EBP];
+
+#include "jove_do_syscall.h"
+
+    __builtin_unreachable();
+}
+#else
 {
     raise_interrupt(env, intno, next_eip_addend);
 }
+#endif
 
 G_NORETURN void helper_raise_exception(CPUX86State *env, int exception_index)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     raise_exception(env, exception_index);
 }
+#endif
 
 /*
  * Check nested exceptions and change to double or triple fault if
@@ -115,32 +137,67 @@ void raise_interrupt2(CPUX86State *env, int intno,
 /* shortcuts to generate exceptions */
 
 G_NORETURN void raise_interrupt(CPUX86State *env, int intno, int next_eip_addend)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     raise_interrupt2(env, intno, 1, 0, next_eip_addend, 0);
 }
+#endif
 
 G_NORETURN void raise_exception_err(CPUX86State *env, int exception_index,
                                     int error_code)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     raise_interrupt2(env, exception_index, 0, error_code, 0, 0);
 }
+#endif
 
 G_NORETURN void raise_exception_err_ra(CPUX86State *env, int exception_index,
                                        int error_code, uintptr_t retaddr)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     raise_interrupt2(env, exception_index, 0, error_code, 0, retaddr);
 }
+#endif
 
 G_NORETURN void raise_exception(CPUX86State *env, int exception_index)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     raise_interrupt2(env, exception_index, 0, 0, 0, 0);
 }
+#endif
 
 G_NORETURN void raise_exception_ra(CPUX86State *env, int exception_index,
                                    uintptr_t retaddr)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     raise_interrupt2(env, exception_index, 0, 0, 0, retaddr);
 }
+#endif
 
 G_NORETURN void helper_icebp(CPUX86State *env)
 {

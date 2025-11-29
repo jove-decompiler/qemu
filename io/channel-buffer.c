@@ -23,7 +23,17 @@
 #include "io/channel-watch.h"
 #include "qemu/module.h"
 #include "qemu/sockets.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_task_new(...)                  do {} while (false)
+#define trace_qio_task_thread_result(...)        do {} while (false)
+#define trace_qio_task_thread_run(...)           do {} while (false)
+#define trace_qio_task_thread_exit(...)          do {} while (false)
+#define trace_qio_task_thread_source_attach(...) do {} while (false)
+#define trace_qio_task_complete(...)             do {} while (false)
+#define trace_qio_task_thread_source_cancel(...) do {} while (false)
+#endif
 
 QIOChannelBuffer *
 qio_channel_buffer_new(size_t capacity)

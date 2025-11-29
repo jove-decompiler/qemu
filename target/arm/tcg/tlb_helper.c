@@ -274,6 +274,12 @@ void arm_deliver_fault(ARMCPU *cpu, vaddr addr,
 void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
                                  MMUAccessType access_type,
                                  int mmu_idx, uintptr_t retaddr)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     ARMCPU *cpu = ARM_CPU(cs);
     ARMMMUFaultInfo fi = {};
@@ -284,6 +290,7 @@ void arm_cpu_do_unaligned_access(CPUState *cs, vaddr vaddr,
     fi.type = ARMFault_Alignment;
     arm_deliver_fault(cpu, vaddr, access_type, mmu_idx, &fi);
 }
+#endif
 
 void helper_exception_pc_alignment(CPUARMState *env, vaddr pc)
 {

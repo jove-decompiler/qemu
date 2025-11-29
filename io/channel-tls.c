@@ -22,7 +22,24 @@
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "io/channel-tls.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_channel_tls_new_server(...)         do {} while (false)
+#define trace_qio_channel_tls_new_client(...)         do {} while (false)
+#define trace_qio_channel_tls_handshake_fail(...)     do {} while (false)
+#define trace_qio_channel_tls_credentials_deny(...)   do {} while (false)
+#define trace_qio_channel_tls_credentials_allow(...)  do {} while (false)
+#define trace_qio_channel_tls_handshake_pending(...)  do {} while (false)
+#define trace_qio_channel_tls_handshake_start(...)    do {} while (false)
+#define trace_qio_channel_tls_bye_fail(...)           do {} while (false)
+#define trace_qio_channel_tls_bye_pending(...)        do {} while (false)
+#define trace_qio_channel_tls_bye_start(...)          do {} while (false)
+#define trace_qio_channel_tls_handshake_cancel(...)   do {} while (false)
+#define trace_qio_channel_tls_bye_cancel(...)         do {} while (false)
+#define trace_qio_channel_tls_handshake_complete(...) do {} while (false)
+#define trace_qio_channel_command_new_pid(...)        do {} while (false)
+#endif
 #include "qemu/atomic.h"
 
 

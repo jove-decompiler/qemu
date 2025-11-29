@@ -7,7 +7,9 @@
  */
 #include "qemu/osdep.h"
 #include "qemu/crc32c.h"
+#if !(defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS))
 #include <zlib.h> /* for crc32 */
+#endif
 
 #define HELPER_H "tcg/helper.h"
 #include "exec/helper-proto.h.inc"
@@ -270,6 +272,11 @@ uint32_t HELPER(sel_flags)(uint32_t flags, uint32_t a, uint32_t b)
     }
     return (a & mask) | (b & ~mask);
 }
+
+#if defined(__aarch64__) && defined(CONFIG_JOVE_HELPERS)
+#undef crc32
+#include "linux_aarch64_crc32.c"
+#endif
 
 /*
  * CRC helpers.

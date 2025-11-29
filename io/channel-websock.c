@@ -23,7 +23,23 @@
 #include "qemu/bswap.h"
 #include "io/channel-websock.h"
 #include "crypto/hash.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_channel_websock_handshake_complete(...)    do {} while (false)
+#define trace_qio_channel_websock_http_greeting(...)         do {} while (false)
+#define trace_qio_channel_websock_http_request(...)          do {} while (false)
+#define trace_qio_channel_websock_handshake_fail(...)        do {} while (false)
+#define trace_qio_channel_websock_close(...)                 do {} while (false)
+#define trace_qio_channel_websock_handshake_pending(...)     do {} while (false)
+#define trace_qio_channel_websock_handshake_reply(...)       do {} while (false)
+#define trace_qio_channel_websock_encode(...)                do {} while (false)
+#define trace_qio_channel_websock_header_partial_decode(...) do {} while (false)
+#define trace_qio_channel_websock_header_full_decode(...)    do {} while (false)
+#define trace_qio_channel_websock_payload_decode(...)        do {} while (false)
+#define trace_qio_channel_websock_new_server(...)            do {} while (false)
+#define trace_qio_channel_websock_handshake_start(...)       do {} while (false)
+#endif
 #include "qemu/iov.h"
 #include "qemu/module.h"
 

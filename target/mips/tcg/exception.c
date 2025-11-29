@@ -43,11 +43,25 @@ target_ulong exception_resume_pc(CPUMIPSState *env)
     return bad_pc;
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+void helper_raise_exception_err(CPUMIPSState *env, uint32_t exception,
+                                int error_code)
+{
+#include "jove_do_syscall.h"
+
+    __builtin_unreachable();
+}
+
+#else
+
 void helper_raise_exception_err(CPUMIPSState *env, uint32_t exception,
                                 int error_code)
 {
     do_raise_exception_err(env, exception, error_code, 0);
 }
+
+#endif
 
 void helper_raise_exception(CPUMIPSState *env, uint32_t exception)
 {
@@ -136,8 +150,15 @@ const char *mips_exception_name(int32_t exception)
     return excp_names[exception];
 }
 
+
 void do_raise_exception_err(CPUMIPSState *env, uint32_t exception,
                             int error_code, uintptr_t pc)
+#ifdef CONFIG_JOVE_HELPERS
+{
+  __builtin_trap();
+  __builtin_unreachable();
+}
+#else
 {
     CPUState *cs = env_cpu(env);
 
@@ -149,3 +170,4 @@ void do_raise_exception_err(CPUMIPSState *env, uint32_t exception,
 
     cpu_loop_exit_restore(cs, pc);
 }
+#endif

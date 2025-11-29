@@ -35,7 +35,7 @@ endif
 syscall_nr_generators = {}
 
 gen_vdso_exe = executable('gen-vdso', 'gen-vdso.c',
-                          native: true, build_by_default: false)
+                          native: true, build_by_default: false, c_args: ['-fuse-ld=lld'], link_args: ['-fuse-ld=lld'])
 gen_vdso = generator(gen_vdso_exe, output: '@BASENAME@.c.inc',
                      arguments: ['-o', '@OUTPUT@', '@EXTRA_ARGS@', '@INPUT@'])
 

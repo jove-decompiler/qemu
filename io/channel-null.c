@@ -22,7 +22,11 @@
 #include "io/channel-null.h"
 #include "io/channel-watch.h"
 #include "qapi/error.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_channel_null_new(...) do {} while (false)
+#endif
 #include "qemu/iov.h"
 
 typedef struct QIOChannelNullSource QIOChannelNullSource;

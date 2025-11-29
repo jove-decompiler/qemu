@@ -302,12 +302,14 @@ void QEMU_ERROR("code path is reachable")
  * submit patches to remove any side-effects inside an assertion, or
  * fixing error handling that should use Error instead of assert.
  */
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef NDEBUG
 #error building with NDEBUG is not supported
 #endif
 #ifdef G_DISABLE_ASSERT
 #error building with G_DISABLE_ASSERT is not supported
 #endif
+#endif /* CONFIG_JOVE_HELPERS */
 
 #ifndef OFF_MAX
 #define OFF_MAX (sizeof (off_t) == 8 ? INT64_MAX : INT32_MAX)

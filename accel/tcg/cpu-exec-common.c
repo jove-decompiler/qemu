@@ -23,7 +23,9 @@
 #include "qemu/plugin.h"
 #include "internal-common.h"
 
+#ifndef CONFIG_JOVE_HELPERS
 bool tcg_allowed;
+#endif
 
 bool tcg_cflags_has(CPUState *cpu, uint32_t flags)
 {
@@ -59,12 +61,25 @@ uint32_t curr_cflags(CPUState *cpu)
 
 /* exit the current TB, but without causing any exception to be raised */
 void cpu_loop_exit_noexc(CPUState *cpu)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     cpu->exception_index = -1;
     cpu_loop_exit(cpu);
 }
+#endif
 
 void cpu_loop_exit(CPUState *cpu)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     /* Undo the setting in cpu_tb_exec.  */
     cpu->neg.can_do_io = true;
@@ -72,19 +87,34 @@ void cpu_loop_exit(CPUState *cpu)
     qemu_plugin_disable_mem_helpers(cpu);
     siglongjmp(cpu->jmp_env, 1);
 }
+#endif
 
 void cpu_loop_exit_restore(CPUState *cpu, uintptr_t pc)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     if (pc) {
         cpu_restore_state(cpu, pc);
     }
     cpu_loop_exit(cpu);
 }
+#endif
 
 void cpu_loop_exit_atomic(CPUState *cpu, uintptr_t pc)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     /* Prevent looping if already executing in a serial context. */
     g_assert(!cpu_in_serial_context(cpu));
     cpu->exception_index = EXCP_ATOMIC;
     cpu_loop_exit_restore(cpu, pc);
 }
+#endif

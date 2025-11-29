@@ -48,6 +48,24 @@ void helper_into(CPUX86State *env, int next_eip_addend)
 }
 
 void helper_cpuid(CPUX86State *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    uint32_t index = env->regs[R_EAX];
+    uint32_t count = env->regs[R_ECX];
+
+    uint32_t eax, ebx, ecx, edx;
+    asm volatile("cpuid"
+                 : "=a"(eax), "=b"(ebx),
+                   "=c"(ecx), "=d"(edx)
+                 : "0"(index), "c"(count)
+                 : "cc");
+
+    env->regs[R_EAX] = eax;
+    env->regs[R_EBX] = ebx;
+    env->regs[R_ECX] = ecx;
+    env->regs[R_EDX] = edx;
+}
+#else
 {
     uint32_t eax, ebx, ecx, edx;
 
@@ -60,8 +78,18 @@ void helper_cpuid(CPUX86State *env)
     env->regs[R_ECX] = ecx;
     env->regs[R_EDX] = edx;
 }
+#endif
 
 void helper_rdtsc(CPUX86State *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    uint32_t tickl, tickh;
+    asm volatile("rdtsc" : "=a"(tickl), "=d"(tickh));
+
+    env->regs[R_EAX] = tickl;
+    env->regs[R_EDX] = tickh;
+}
+#else
 {
     uint64_t val;
 
@@ -74,8 +102,21 @@ void helper_rdtsc(CPUX86State *env)
     env->regs[R_EAX] = (uint32_t)(val);
     env->regs[R_EDX] = (uint32_t)(val >> 32);
 }
+#endif
 
 G_NORETURN void helper_rdpmc(CPUX86State *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    uint32_t counter = env->regs[R_ECX];
+
+    uint32_t lo, hi;
+
+    asm volatile("rdpmc" : "=a" (lo), "=d" (hi) : "c" (counter));
+
+    env->regs[R_EAX] = lo;
+    env->regs[R_EDX] = hi;
+}
+#else
 {
     if (((env->cr[4] & CR4_PCE_MASK) == 0 ) &&
         ((env->hflags & HF_CPL_MASK) != 0)) {
@@ -87,8 +128,14 @@ G_NORETURN void helper_rdpmc(CPUX86State *env)
     qemu_log_mask(LOG_UNIMP, "x86: unimplemented rdpmc\n");
     raise_exception_err(env, EXCP06_ILLOP, 0);
 }
+#endif
 
 G_NORETURN void helper_pause(CPUX86State *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    asm volatile("pause");
+}
+#else
 {
     CPUState *cs = env_cpu(env);
 
@@ -100,6 +147,7 @@ G_NORETURN void helper_pause(CPUX86State *env)
     cs->exception_index = EXCP_INTERRUPT;
     cpu_loop_exit(cs);
 }
+#endif
 
 uint64_t helper_rdpkru(CPUX86State *env, uint32_t ecx)
 {
@@ -128,7 +176,15 @@ void helper_wrpkru(CPUX86State *env, uint32_t ecx, uint64_t val)
     tlb_flush(cs);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+__attribute__((__always_inline__, __nodebug__, __target__("rdpid")))
+#endif
 target_ulong HELPER(rdpid)(CPUX86State *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+  return __builtin_ia32_rdpid();
+}
+#else
 {
 #if !defined CONFIG_USER_ONLY
     return env->tsc_aux;
@@ -142,3 +198,5 @@ target_ulong HELPER(rdpid)(CPUX86State *env)
     return 0;
 #endif
 }
+
+#endif /* CONFIG_JOVE_HELPERS */

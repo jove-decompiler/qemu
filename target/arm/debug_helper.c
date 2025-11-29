@@ -515,6 +515,12 @@ void arm_debug_excp_handler(CPUState *cs)
  * targeting the correct exception level for debug exceptions.
  */
 void HELPER(exception_bkpt_insn)(CPUARMState *env, uint32_t syndrome)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     int debug_el = arm_debug_target_el(env);
     int cur_el = arm_current_el(env);
@@ -540,6 +546,7 @@ void HELPER(exception_bkpt_insn)(CPUARMState *env, uint32_t syndrome)
     }
     raise_exception(env, EXCP_BKPT, syndrome, debug_el);
 }
+#endif
 
 void HELPER(exception_swstep)(CPUARMState *env, uint32_t syndrome)
 {

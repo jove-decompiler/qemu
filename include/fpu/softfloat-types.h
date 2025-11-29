@@ -82,6 +82,12 @@ this code that are retained.
 
 #include "hw/registerfields.h"
 
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define JOVE_MS_STRUCT __attribute__((ms_struct))
+#else
+#define JOVE_MS_STRUCT
+#endif
+
 /*
  * Software IEC/IEEE floating-point types.
  */
@@ -98,13 +104,13 @@ typedef uint64_t float64;
 #define const_float16(x) (x)
 #define const_float32(x) (x)
 #define const_float64(x) (x)
-typedef struct {
+typedef struct JOVE_MS_STRUCT {
     uint64_t low;
     uint16_t high;
 } floatx80;
 #define make_floatx80(exp, mant) ((floatx80) { mant, exp })
 #define make_floatx80_init(exp, mant) { .low = mant, .high = exp }
-typedef struct {
+typedef struct JOVE_MS_STRUCT {
 #if HOST_BIG_ENDIAN
     uint64_t high, low;
 #else
@@ -377,7 +383,7 @@ typedef enum __attribute__((__packed__)) {
  * most of the softfloat functions.
  */
 
-typedef struct float_status {
+typedef struct JOVE_MS_STRUCT float_status {
     uint16_t float_exception_flags;
     FloatRoundMode float_rounding_mode;
     FloatX80RoundPrec floatx80_rounding_precision;

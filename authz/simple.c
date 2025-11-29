@@ -20,7 +20,11 @@
 
 #include "qemu/osdep.h"
 #include "authz/simple.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qauthz_simple_is_allowed(...) do {} while (false)
+#endif
 #include "qemu/module.h"
 #include "qom/object_interfaces.h"
 

@@ -54,6 +54,13 @@
 
 #include "trace.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+void ____copyme_env(CPUARMState *env) {
+  (void)(target_ulong)0;
+  (void)env->xregs;
+}
+#endif
+
 static void arm_cpu_set_pc(CPUState *cs, vaddr value)
 {
     ARMCPU *cpu = ARM_CPU(cs);

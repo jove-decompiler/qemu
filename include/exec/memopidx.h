@@ -39,7 +39,11 @@ static inline MemOpIdx make_memop_idx(MemOp op, unsigned idx)
  */
 static inline MemOp get_memop(MemOpIdx oi)
 {
+#ifdef __cplusplus
+    return (MemOp)(oi >> 5);
+#else
     return oi >> 5;
+#endif
 }
 
 /**

@@ -22,7 +22,6 @@
 #include "exec/helper-proto-common.h"
 #include "tcg/tcg-gvec-desc.h"
 
-
 static inline void clear_high(void *d, intptr_t oprsz, uint32_t desc)
 {
     intptr_t maxsz = simd_maxsz(desc);
@@ -395,7 +394,7 @@ void HELPER(gvec_mov)(void *d, void *a, uint32_t desc)
 {
     intptr_t oprsz = simd_oprsz(desc);
 
-    memcpy(d, a, oprsz);
+    __builtin_memcpy(d, a, oprsz);
     clear_high(d, oprsz, desc);
 }
 

@@ -43,7 +43,9 @@
 #include "internal-common.h"
 #include "tb-internal.h"
 
+#ifndef CONFIG_JOVE_HELPERS
 __thread uintptr_t helper_retaddr;
+#endif
 
 //#define DEBUG_SIGNAL
 
@@ -745,6 +747,11 @@ int page_unprotect(CPUState *cpu, tb_page_addr_t address, uintptr_t pc)
 static int probe_access_internal(CPUArchState *env, vaddr addr,
                                  int fault_size, MMUAccessType access_type,
                                  bool nonfault, uintptr_t ra)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    return 0;
+}
+#else
 {
     int acc_flag;
     bool maperr;
@@ -783,6 +790,7 @@ static int probe_access_internal(CPUArchState *env, vaddr addr,
 
     cpu_loop_exit_sigsegv(env_cpu(env), addr, access_type, maperr, ra);
 }
+#endif
 
 int probe_access_flags(CPUArchState *env, vaddr addr, int size,
                        MMUAccessType access_type, int mmu_idx,
@@ -935,10 +943,12 @@ static void *cpu_mmu_lookup(CPUState *cpu, vaddr addr,
     int a_bits = memop_alignment_bits(mop);
     void *ret;
 
+#ifndef CONFIG_JOVE_HELPERS
     /* Enforce guest required alignment.  */
     if (unlikely(addr & ((1 << a_bits) - 1))) {
         cpu_loop_exit_sigbus(cpu, addr, type, ra);
     }
+#endif
 
     ret = g2h(cpu, addr);
     set_helper_retaddr(ra);
@@ -1223,6 +1233,7 @@ static void *atomic_mmu_lookup(CPUState *cpu, vaddr addr, MemOpIdx oi,
     int a_bits = memop_alignment_bits(mop);
     void *ret;
 
+#ifndef CONFIG_JOVE_HELPERS
     /* Enforce guest required alignment.  */
     if (unlikely(addr & ((1 << a_bits) - 1))) {
         cpu_loop_exit_sigbus(cpu, addr, MMU_DATA_STORE, retaddr);
@@ -1232,6 +1243,7 @@ static void *atomic_mmu_lookup(CPUState *cpu, vaddr addr, MemOpIdx oi,
     if (unlikely(addr & (size - 1))) {
         cpu_loop_exit_atomic(cpu, retaddr);
     }
+#endif
 
     ret = g2h(cpu, addr);
     set_helper_retaddr(retaddr);

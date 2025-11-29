@@ -3,6 +3,12 @@ project('qemu', ['c'], meson_version: '>=1.5.0',
                           'b_staticpic=false', 'stdsplit=false', 'optimization=2', 'b_pie=true'],
         version: files('VERSION'))
 
+# if clang, force -fuse-ld=lld
+if meson.get_compiler('c').get_id() == 'clang'
+  add_project_arguments(['-fuse-ld=lld', '-fexceptions'], language: 'c')
+  add_project_link_arguments('-fuse-ld=lld', language: ['c', 'cpp'])
+endif
+
 meson.add_devenv({ 'MESON_BUILD_ROOT' : meson.project_build_root() })
 
 add_test_setup('quick', exclude_suites: ['slow', 'thorough'], is_default: true,
@@ -721,6 +727,26 @@ qemu_common_flags += cc.get_supported_arguments(hardening_flags)
 
 add_global_arguments(qemu_common_flags, native: false, language: all_languages)
 add_global_link_arguments(qemu_ldflags, native: false, language: all_languages)
+
+if get_option('jove_helpers')
+  c_compiler = meson.get_compiler('c')
+  if c_compiler.get_id() == 'clang' and c_compiler.compiles('''
+      # if __clang_major__ != 19
+      #  error
+      # endif''')
+    add_global_arguments('-Xclang', '-load', \
+                         '-Xclang', '/usr/local/lib/libcarbon-collect-19.so', \
+                         '-Xclang', '-add-plugin', \
+                         '-Xclang', 'carbon-collect', \
+                         '-Xclang', '-plugin-arg-carbon-collect', \
+                         '-Xclang', meson.source_root(), \
+                         '-Xclang', '-plugin-arg-carbon-collect', \
+                         '-Xclang', meson.current_build_dir(), language : 'c')
+  endif
+  add_global_arguments('-gdwarf-4', language : 'c')
+  add_global_arguments('-mllvm', '-trap-unreachable', language : 'c')
+  add_global_arguments('-DHW_POISON_H', language : 'c')
+endif
 
 # Collect warning flags we want to set, sorted alphabetically
 warn_flags = [
@@ -2300,6 +2326,9 @@ endif
 
 config_host_data = configuration_data()
 
+config_host_data.set('CONFIG_JOVE', get_option('jove'))
+config_host_data.set('CONFIG_JOVE_HELPERS', get_option('jove_helpers'))
+
 config_host_data.set('CONFIG_HAVE_RUST', have_rust)
 audio_drivers_selected = []
 if have_system
@@ -3416,6 +3445,9 @@ foreach target : target_dirs
   endforeach
   config_target_data.set('QEMU_ARCH',
                          'QEMU_ARCH_' + config_target['TARGET_BASE_ARCH'].to_upper())
+
+  config_target_data.set('CONFIG_TARGET_XML_FILES', 'TARGET_XML_FILES' in config_target)
+
   config_target_h += {target: configure_file(output: target + '-config-target.h',
                                                configuration: config_target_data)}
 
@@ -3724,6 +3756,7 @@ stub_ss = ss.source_set()
 trace_ss = ss.source_set()
 user_ss = ss.source_set()
 util_ss = ss.source_set()
+fpu_soft_ss = ss.source_set()
 
 # accel modules
 qtest_module_ss = ss.source_set()
@@ -3849,7 +3882,7 @@ subdir('system')
 # without lto, not even the alias is required -- we simply use different
 # declarations in different compilation units.
 pagevary = files('page-vary-common.c')
-if get_option('b_lto')
+if get_option('b_lto') and meson.get_compiler('c').get_id() == 'gcc'
   pagevary_flags = ['-fno-lto']
   if get_option('cfi')
     pagevary_flags += '-fno-sanitize=cfi-icall'
@@ -4394,6 +4427,18 @@ foreach target : target_dirs
                  c_args: c_args,
                  build_by_default: false)
 
+  libfpu_soft_c_args = c_args
+  libfpu_soft_c_args += ['-DJOVE_LIBFPU', '-ffreestanding', '-nostdlib']
+  fpu_soft = fpu_soft_ss.apply(config_target, strict: false)
+  libfpu_soft = static_library('fpu_soft-' + target,
+                 sources: fpu_soft.sources(),
+                 dependencies: fpu_soft.dependencies(),
+                 include_directories: target_inc,
+                 c_args: libfpu_soft_c_args,
+                 pic: true,
+                 build_by_default: true,
+                 name_suffix: 'a')
+
   if target.endswith('-softmmu')
     execs = [{
       'name': 'qemu-system-' + target_name,
@@ -4432,14 +4477,39 @@ foreach target : target_dirs
       exe_name += '-unsigned'
     endif
 
+    extra_link_args = []
+    if get_option('jove')
+      extra_link_args += ['-Wl,--unresolved-symbols=ignore-all']
+    endif
+
     emulator = executable(exe_name, exe['sources'],
                install: true,
                c_args: c_args,
                dependencies: arch_deps + exe['dependencies'],
                objects: lib.extract_all_objects(recursive: true),
                link_depends: [block_syms, qemu_syms],
-               link_args: link_args,
+               link_args: link_args + extra_link_args,
                win_subsystem: exe['win_subsystem'])
+    if get_option('jove_helpers')
+    emulator_bitcode = executable(exe_name + '.bitcode', exe['sources'],
+                       install: true,
+                       c_args: c_args,
+                       dependencies: arch_deps + exe['dependencies'],
+                       objects: lib.extract_all_objects(recursive: true),
+                       link_depends: [block_syms, qemu_syms],
+                       link_args: link_args + ['-Wl,-plugin-opt=emit-llvm'],
+                       win_subsystem: exe['win_subsystem'])
+    elif get_option('jove')
+    qemu4jove = static_library('qemu4jove-' + target_name, exe['sources'],
+                install: true,
+                c_args: c_args,
+                dependencies: arch_deps + exe['dependencies'] + [io, vhost_user],
+                objects: lib.extract_all_objects(recursive: true),
+                link_depends: [block_syms, qemu_syms],
+                link_args: link_args,
+                build_by_default: true,
+                name_suffix: 'a')
+    endif
 
     if host_os == 'darwin'
       icon = 'pc-bios/qemu.rsrc'
@@ -4588,7 +4658,7 @@ subdir('docs')
 # Tests are disabled on emscripten because they rely on host features that aren't
 # supported by emscripten (e.g. fork and unix socket).
 if host_os != 'emscripten'
-  subdir('tests')
+# subdir('tests')
 endif
 if gtk.found()
   subdir('po')

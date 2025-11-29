@@ -20,7 +20,12 @@
 
 #include "qemu/osdep.h"
 #include "authz/list.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qauthz_list_check_rule(...)     do {} while (false)
+#define trace_qauthz_list_default_policy(...) do {} while (false)
+#endif
 #include "qom/object_interfaces.h"
 #include "qapi/qapi-visit-authz.h"
 #include "qemu/module.h"

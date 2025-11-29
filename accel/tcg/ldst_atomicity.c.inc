@@ -152,6 +152,7 @@ static uint64_t load_atomic8_or_exit(CPUState *cpu, uintptr_t ra, void *pv)
         return load_atomic8(pv);
     }
 
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef CONFIG_USER_ONLY
     /*
      * If the page is not writable, then assume the value is immutable
@@ -165,6 +166,7 @@ static uint64_t load_atomic8_or_exit(CPUState *cpu, uintptr_t ra, void *pv)
             return *p;
         }
     }
+#endif
 #endif
 
     /* Ultimate fallback: re-execute in serial context. */
@@ -201,12 +203,18 @@ static Int128 load_atomic16_or_exit(CPUState *cpu, uintptr_t ra, void *pv)
      * the write is complete -- tests/tcg/multiarch/munmap-pthread.c
      * is an example that can race.
      */
+#ifdef CONFIG_JOVE_HELPERS
+    {
+#else
     WITH_MMAP_LOCK_GUARD() {
+#endif
+#ifndef CONFIG_JOVE_HELPERS
 #ifdef CONFIG_USER_ONLY
         if (!page_check_range(h2g(p), 16, PAGE_WRITE_ORG)) {
             return *p;
         }
 #endif
+#endif /* CONFIG_JOVE_HELPERS */
         if (HAVE_ATOMIC128_RW) {
             return atomic16_read_rw(p);
         }
@@ -554,7 +562,7 @@ static Int128 load_atom_16(CPUState *cpu, uintptr_t ra,
     atmax = required_atomicity(cpu, pi, memop);
     switch (atmax) {
     case MO_8:
-        memcpy(&r, pv, 16);
+        __builtin_memcpy_inline(&r, pv, 16);
         return r;
     case MO_16:
         a = load_atom_8_by_2(pv);
@@ -1066,7 +1074,7 @@ static void store_atom_16(CPUState *cpu, uintptr_t ra,
     b = HOST_BIG_ENDIAN ? int128_getlo(val) : int128_gethi(val);
     switch (atmax) {
     case MO_8:
-        memcpy(pv, &val, 16);
+        __builtin_memcpy_inline(pv, &val, 16);
         return;
     case MO_16:
         store_atom_8_by_2(pv, a);

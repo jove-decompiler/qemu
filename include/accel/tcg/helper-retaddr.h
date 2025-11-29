@@ -14,7 +14,11 @@
  * actual access.
  */
 #ifdef CONFIG_USER_ONLY
+#ifdef CONFIG_JOVE_HELPERS
+static uintptr_t helper_retaddr;
+#else
 extern __thread uintptr_t helper_retaddr;
+#endif
 
 static inline void set_helper_retaddr(uintptr_t ra)
 {

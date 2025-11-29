@@ -73,6 +73,15 @@
 #define floatx80_ln2_d make_floatx80(0x3ffe, 0xb17217f7d1cf79abLL)
 #define floatx80_pi_d make_floatx80(0x4000, 0xc90fdaa22168c234LL)
 
+#ifdef CONFIG_JOVE_HELPERS
+#define memset __builtin_memset
+#define abort jove_abort
+static void jove_abort(void) {
+  __builtin_trap();
+  __builtin_unreachable();
+}
+#endif
+
 static inline void fpush(CPUX86State *env)
 {
     env->fpstt = (env->fpstt - 1) & 7;
@@ -1295,6 +1304,66 @@ void helper_f2xm1(CPUX86State *env)
     merge_exception_flags(env, old_flags);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+#ifdef __i386__
+
+static double _jove_cos(double x) {
+  double the_cos;
+  asm("fcos" : "=t"(the_cos) : "0"(x));
+  return the_cos;
+}
+static double _jove_sin(double x) {
+  double the_sin;
+  asm("fsin" : "=t"(the_sin) : "0"(x));
+  return the_sin;
+}
+
+#else
+
+#define CONST_PI  3.14159265358979323846264338327950288419716939937510
+
+static
+double cos_taylor_running_10terms(double x)
+{
+    int div = (int)(x / CONST_PI);
+    x = x - (div * CONST_PI);
+    char sign = 1;
+    if (div % 2 != 0)
+        sign = -1;
+
+    double result = 1.0;
+    double inter = 1.0;
+    double num = x * x;
+    for (int i = 1; i <= 10; i++)
+    {
+        double comp = 2.0 * i;
+        double den = comp * (comp - 1.0);
+        inter *= num / den;
+        if (i % 2 == 0)
+            result += inter;
+        else
+            result -= inter;
+    }
+    return sign * result;
+}
+
+static double _jove_cos(double x) {
+  return cos_taylor_running_10terms(x);
+}
+static double _jove_sin(double x) {
+  return _jove_cos(CONST_PI / 2.0 - x);
+}
+
+#endif
+
+static double _jove_tan(double x) {
+  return _jove_sin(x) / _jove_cos(x);
+}
+
+#define tan _jove_tan
+#endif
+
 void helper_fptan(CPUX86State *env)
 {
     double fptemp = floatx80_to_double(env, ST0);
@@ -1310,6 +1379,10 @@ void helper_fptan(CPUX86State *env)
         /* the above code is for |arg| < 2**52 only */
     }
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#undef tan
+#endif
 
 /* Values of pi/4, pi/2, 3pi/4 and pi, with 128-bit precision.  */
 #define pi_4_exp 0x3ffe
@@ -2380,6 +2453,10 @@ void helper_fscale(CPUX86State *env)
     merge_exception_flags(env, old_flags);
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+#define sin _jove_sin
+#endif
+
 void helper_fsin(CPUX86State *env)
 {
     double fptemp = floatx80_to_double(env, ST0);
@@ -2393,6 +2470,14 @@ void helper_fsin(CPUX86State *env)
     }
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+#undef sin
+#endif
+
+#ifdef CONFIG_JOVE_HELPERS
+#define cos _jove_cos
+#endif
+
 void helper_fcos(CPUX86State *env)
 {
     double fptemp = floatx80_to_double(env, ST0);
@@ -2405,6 +2490,10 @@ void helper_fcos(CPUX86State *env)
         /* the above code is for |arg| < 2**63 only */
     }
 }
+
+#ifdef CONFIG_JOVE_HELPERS
+#undef cos
+#endif
 
 void helper_fxam_ST0(CPUX86State *env)
 {

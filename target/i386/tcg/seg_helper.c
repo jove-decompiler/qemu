@@ -1083,6 +1083,12 @@ static void do_interrupt64(CPUX86State *env, int intno, int is_int,
 #endif /* TARGET_X86_64 */
 
 void helper_sysret(CPUX86State *env, int dflag)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     int cpl, selector;
 
@@ -1137,6 +1143,7 @@ void helper_sysret(CPUX86State *env, int dflag)
                                DESC_W_MASK | DESC_A_MASK);
     }
 }
+#endif
 
 /* real mode interrupt */
 static void do_interrupt_real(CPUX86State *env, int intno, int is_int,
@@ -1275,6 +1282,12 @@ void do_interrupt_x86_hardirq(CPUX86State *env, int intno, int is_hw)
 }
 
 void helper_lldt(CPUX86State *env, int selector)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     SegmentCache *dt;
     uint32_t e1, e2;
@@ -1327,8 +1340,16 @@ void helper_lldt(CPUX86State *env, int selector)
     }
     env->ldt.selector = selector;
 }
+#endif
+
 
 void helper_ltr(CPUX86State *env, int selector)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     SegmentCache *dt;
     uint32_t e1, e2;
@@ -1390,6 +1411,7 @@ void helper_ltr(CPUX86State *env, int selector)
     }
     env->tr.selector = selector;
 }
+#endif
 
 /* only works if protected mode and not VM86. seg_reg must be != R_CS */
 void helper_load_seg(CPUX86State *env, int seg_reg, int selector)
@@ -1482,6 +1504,12 @@ void helper_load_seg(CPUX86State *env, int seg_reg, int selector)
 /* protected mode jump */
 void helper_ljmp_protected(CPUX86State *env, int new_cs, target_ulong new_eip,
                            target_ulong next_eip)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     int gate_cs, type;
     uint32_t e1, e2, cpl, dpl, rpl, limit;
@@ -1619,10 +1647,17 @@ void helper_ljmp_protected(CPUX86State *env, int new_cs, target_ulong new_eip,
         }
     }
 }
+#endif
 
 /* real mode call */
 void helper_lcall_real(CPUX86State *env, uint32_t new_cs, uint32_t new_eip,
                        int shift, uint32_t next_eip)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     StackAccess sa;
 
@@ -1646,10 +1681,17 @@ void helper_lcall_real(CPUX86State *env, uint32_t new_cs, uint32_t new_eip,
     env->segs[R_CS].selector = new_cs;
     env->segs[R_CS].base = (new_cs << 4);
 }
+#endif
 
 /* protected mode call */
 void helper_lcall_protected(CPUX86State *env, int new_cs, target_ulong new_eip,
                             int shift, target_ulong next_eip)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     int new_stack, i;
     uint32_t e1, e2, cpl, dpl, rpl, selector, param_count;
@@ -1953,9 +1995,16 @@ void helper_lcall_protected(CPUX86State *env, int new_cs, target_ulong new_eip,
         env->eip = offset;
     }
 }
+#endif
 
 /* real and vm86 mode iret */
 void helper_iret_real(CPUX86State *env, int shift)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     uint32_t new_cs, new_eip, new_eflags;
     int eflags_mask;
@@ -1996,6 +2045,7 @@ void helper_iret_real(CPUX86State *env, int shift)
     cpu_load_eflags(env, new_eflags, eflags_mask);
     env->hflags2 &= ~HF2_NMI_MASK;
 }
+#endif
 
 static inline void validate_seg(CPUX86State *env, X86Seg seg_reg, int cpl)
 {
@@ -2247,6 +2297,12 @@ static inline void helper_ret_protected(CPUX86State *env, int shift,
 }
 
 void helper_iret_protected(CPUX86State *env, int shift, int next_eip)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     int tss_selector, type;
     uint32_t e1, e2;
@@ -2277,13 +2333,27 @@ void helper_iret_protected(CPUX86State *env, int shift, int next_eip)
     }
     env->hflags2 &= ~HF2_NMI_MASK;
 }
+#endif
 
 void helper_lret_protected(CPUX86State *env, int shift, int addend)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     helper_ret_protected(env, shift, 0, addend, GETPC());
 }
+#endif
 
 void helper_sysenter(CPUX86State *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     if (env->sysenter_cs == 0) {
         raise_exception_err_ra(env, EXCP0D_GPF, 0, GETPC());
@@ -2315,8 +2385,15 @@ void helper_sysenter(CPUX86State *env)
     env->regs[R_ESP] = env->sysenter_esp;
     env->eip = env->sysenter_eip;
 }
+#endif
 
 void helper_sysexit(CPUX86State *env, int dflag)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    __builtin_trap();
+    __builtin_unreachable();
+}
+#else
 {
     int cpl;
 
@@ -2354,6 +2431,7 @@ void helper_sysexit(CPUX86State *env, int dflag)
     env->regs[R_ESP] = env->regs[R_ECX];
     env->eip = env->regs[R_EDX];
 }
+#endif
 
 target_ulong helper_lsl(CPUX86State *env, target_ulong selector1)
 {

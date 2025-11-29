@@ -12,6 +12,10 @@
 #include "user/guest-base.h"
 #include "accel/tcg/cpu-ops.h"
 
+#ifdef CONFIG_JOVE
+void *_jv_g2h(uint64_t Addr);
+#endif
+
 /*
  * If non-zero, the guest virtual address space is a contiguous subset
  * of the host virtual address space, i.e. '-R reserved_va' is in effect
@@ -30,6 +34,11 @@ extern unsigned long reserved_va;
 extern unsigned long guest_addr_max;
 
 static inline vaddr cpu_untagged_addr(CPUState *cs, vaddr x)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    return x;
+}
+#else
 {
     const TCGCPUOps *tcg_ops = cs->cc->tcg_ops;
     if (tcg_ops->untagged_addr) {
@@ -37,12 +46,24 @@ static inline vaddr cpu_untagged_addr(CPUState *cs, vaddr x)
     }
     return x;
 }
+#endif
 
 /* All direct uses of g2h and h2g need to go away for usermode softmmu.  */
 static inline void *g2h_untagged(vaddr x)
+#ifdef CONFIG_JOVE_HELPERS
 {
+    return (void *)(x);
+}
+#else
+{
+#ifdef CONFIG_JOVE
+    void *y = _jv_g2h(x);
+    if (y)
+        return y;
+#endif
     return (void *)((uintptr_t)(x) + guest_base);
 }
+#endif
 
 static inline void *g2h(CPUState *cs, vaddr x)
 {
@@ -59,6 +80,17 @@ static inline bool guest_range_valid_untagged(vaddr start, vaddr len)
     return len - 1 <= guest_addr_max && start <= guest_addr_max - len + 1;
 }
 
+#ifdef CONFIG_JOVE_HELPERS
+
+#define h2g_valid(x) true
+
+#define h2g_nocheck(x) ({ \
+    uintptr_t __ret = (uintptr_t)(x); \
+    (vaddr)__ret; \
+})
+
+#else
+
 #define h2g_valid(x) \
     ((uintptr_t)(x) - guest_base <= guest_addr_max)
 
@@ -66,6 +98,8 @@ static inline bool guest_range_valid_untagged(vaddr start, vaddr len)
     uintptr_t __ret = (uintptr_t)(x) - guest_base; \
     (vaddr)__ret; \
 })
+
+#endif
 
 #define h2g(x) ({ \
     /* Check if given address fits target address space */ \

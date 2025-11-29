@@ -38,6 +38,10 @@ option('coroutine_backend', type: 'combo',
        value: 'auto', description: 'coroutine backend to use')
 option('gdb', type: 'string', value: '',
        description: 'Path to GDB')
+option('jove', type: 'boolean', value: false,
+       description: 'qemu4jove')
+option('jove_helpers', type: 'boolean', value: false,
+       description: 'jove helpers')
 
 # Everything else can be set via --enable/--disable-* option
 # on the configure script command line.  After adding an option

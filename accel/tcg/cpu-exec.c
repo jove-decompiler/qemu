@@ -47,6 +47,45 @@
 #include "tb-internal.h"
 #include "internal-common.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+extern __thread CPUState *thread_cpu;
+
+void ____copyme_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
+  (void)((CPUState *)1)->cc->tcg_ops->translate_code(NULL, NULL, NULL, 0, NULL);
+  (void)tcg_type_size(TCGOP_TYPE(op));
+  (void)thread_cpu;
+  (void)(TCGOpcode)0;
+  (void)arg_temp(op->args[0]);
+  (void)temp_arg((TCGTemp *)1);
+  (void)temp_idx((TCGTemp *)1);
+  (void)TCGOP_CALLO(op);
+  (void)TCGOP_CALLI(op);
+  (void)(TCGLabel *)arg_label(op->args[0]);
+  (void)(MemOpIdx)0;
+  (void)(MemOp)get_memop(0);
+  (void)(TCGArg)0;
+  (void)MO_SSIZE;
+  (void)MO_UB;
+  (void)MO_SB;
+  (void)MO_UW;
+  (void)MO_SW;
+  (void)MO_UL;
+  (void)MO_SL;
+  (void)MO_UQ;
+  (void)TCG_TARGET_REG_BITS;
+  (void)TCG_COND_NE;
+
+#ifdef TCG_GUEST_DEFAULT_MO
+  (void)TCG_GUEST_DEFAULT_MO;
+#else
+  (void)TCG_MO_ALL;
+#endif
+
+  QTAILQ_FOREACH(op, &s->ops, link) {}
+}
+#endif
+
+
 /* -icount align implementation. */
 
 typedef struct SyncClocks {
@@ -372,6 +411,11 @@ static inline bool check_for_breakpoints(CPUState *cpu, vaddr pc,
  * the tcg epilogue so that we return into cpu_tb_exec.
  */
 const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
+#ifdef CONFIG_JOVE_HELPERS
+{
+    return NULL;
+}
+#else
 {
     CPUState *cpu = env_cpu(env);
     TranslationBlock *tb;
@@ -403,6 +447,7 @@ const void *HELPER(lookup_tb_ptr)(CPUArchState *env)
 
     return tb->tc.ptr;
 }
+#endif
 
 /* Return the current PC from CPU, which may be cached in TB. */
 static vaddr log_pc(CPUState *cpu, const TranslationBlock *tb)

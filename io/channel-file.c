@@ -25,7 +25,12 @@
 #include "qapi/error.h"
 #include "qemu/module.h"
 #include "qemu/sockets.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_channel_file_new_fd(...)   do {} while (false)
+#define trace_qio_channel_file_new_path(...) do {} while (false)
+#endif
 
 QIOChannelFile *
 qio_channel_file_new_fd(int fd)

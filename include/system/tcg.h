@@ -11,7 +11,11 @@
 #define SYSTEM_TCG_H
 
 #ifdef CONFIG_TCG
+#ifdef CONFIG_JOVE_HELPERS
+static bool tcg_allowed = true;
+#else
 extern bool tcg_allowed;
+#endif
 #define tcg_enabled() (tcg_allowed)
 #else
 #define tcg_enabled() 0

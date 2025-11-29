@@ -270,6 +270,7 @@ unset target_list_exclude
 # because they automatically enable/disable other options
 tcg="auto"
 cfi="false"
+werror="true"
 
 # Meson has PIE as a boolean rather than enabled/disabled/auto,
 # and we also need to check for -static-pie before Meson runs
@@ -400,6 +401,8 @@ elif check_define _ARCH_PPC64 ; then
 elif check_define __mips__ ; then
   if check_define __mips64 ; then
     cpu="mips64"
+  else
+    cpu="mips"
   fi
 elif check_define __s390__ ; then
   if check_define __s390x__ ; then
@@ -464,6 +467,12 @@ case "$cpu" in
 
   mips64*|mipsisa64*)
     cpu=mips64
+    host_arch=mips
+    linux_arch=mips
+    ;;
+
+  mips*)
+    cpu=mips
     host_arch=mips
     linux_arch=mips
     ;;
@@ -752,6 +761,8 @@ for opt do
   --enable-cfi) cfi=true
   ;;
   --disable-cfi) cfi=false
+  ;;
+  --disable-werror) werror="false"
   ;;
   --disable-download) download="disabled"; git_submodules_action=validate;
   ;;
@@ -1895,7 +1906,7 @@ if test "$skip_meson" = no; then
   echo "# the command line" >> $cross
   if test -e "$source_path/.git" && \
       { test "$host_os" = linux || test "$host_os" = "windows"; }; then
-      echo 'werror = true' >> $cross
+      echo "werror = $werror" >> $cross
   fi
   echo "[project options]" >> $cross
   if test "$SMBD" != ''; then

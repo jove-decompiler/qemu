@@ -155,7 +155,13 @@ struct CPUClass {
 
     ObjectClass *(*class_by_name)(const char *cpu_model);
     void (*list_cpus)(void);
+#ifdef __cplusplus
+#define typename
+#endif
     void (*parse_features)(const char *typename, char *str, Error **errp);
+#ifdef __cplusplus
+#undef typename
+#endif
 
     int (*memory_rw_debug)(CPUState *cpu, vaddr addr,
                            uint8_t *buf, size_t len, bool is_write);

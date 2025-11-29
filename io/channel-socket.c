@@ -24,7 +24,27 @@
 #include "io/channel-socket.h"
 #include "io/channel-util.h"
 #include "io/channel-watch.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_channel_socket_new(...)              do {} while (false)
+#define trace_qio_channel_socket_new_fd(...)           do {} while (false)
+#define trace_qio_channel_socket_connect_sync(...)     do {} while (false)
+#define trace_qio_channel_socket_connect_fail(...)     do {} while (false)
+#define trace_qio_channel_socket_connect_complete(...) do {} while (false)
+#define trace_qio_channel_socket_connect_async(...)    do {} while (false)
+#define trace_qio_channel_socket_listen_sync(...)      do {} while (false)
+#define trace_qio_channel_socket_listen_fail(...)      do {} while (false)
+#define trace_qio_channel_socket_listen_complete(...)  do {} while (false)
+#define trace_qio_channel_socket_listen_async(...)     do {} while (false)
+#define trace_qio_channel_socket_dgram_sync(...)       do {} while (false)
+#define trace_qio_channel_socket_dgram_fail(...)       do {} while (false)
+#define trace_qio_channel_socket_dgram_async(...)      do {} while (false)
+#define trace_qio_channel_socket_dgram_complete(...)   do {} while (false)
+#define trace_qio_channel_socket_accept(...)           do {} while (false)
+#define trace_qio_channel_socket_accept_fail(...)      do {} while (false)
+#define trace_qio_channel_socket_accept_complete(...)  do {} while (false)
+#endif
 #include "qapi/clone-visitor.h"
 #ifdef CONFIG_LINUX
 #include <linux/errqueue.h>

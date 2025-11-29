@@ -25,7 +25,13 @@
 #include "qemu/module.h"
 #include "qemu/lockable.h"
 #include "qemu/main-loop.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qio_net_listener_callback(...) do {} while (false)
+#define trace_qio_net_listener_watch(...)    do {} while (false)
+#define trace_qio_net_listener_unwatch(...)  do {} while (false)
+#endif
 
 struct QIONetListenerSource {
     QIOChannelSocket *sioc;

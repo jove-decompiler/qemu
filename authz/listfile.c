@@ -20,7 +20,12 @@
 
 #include "qemu/osdep.h"
 #include "authz/listfile.h"
+#if !(defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS))
 #include "trace.h"
+#else
+#define trace_qauthz_list_file_load(...)    do {} while (false)
+#define trace_qauthz_list_file_refresh(...) do {} while (false)
+#endif
 #include "qemu/error-report.h"
 #include "qemu/main-loop.h"
 #include "qemu/module.h"
