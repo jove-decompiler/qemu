@@ -215,9 +215,12 @@ void gen_a64_update_pc(DisasContext *s, target_long diff)
 static void gen_top_byte_ignore(DisasContext *s, TCGv_i64 dst,
                                 TCGv_i64 src, int tbi)
 {
+#ifndef CONFIG_JOVE
     if (tbi == 0) {
+#endif
         /* Load unmodified address */
         tcg_gen_mov_i64(dst, src);
+#ifndef CONFIG_JOVE
     } else if (!regime_has_2_ranges(s->mmu_idx)) {
         /* Force tag byte to all zero */
         tcg_gen_extract_i64(dst, src, 0, 56);
@@ -241,6 +244,7 @@ static void gen_top_byte_ignore(DisasContext *s, TCGv_i64 dst,
             g_assert_not_reached();
         }
     }
+#endif
 }
 
 static void gen_a64_set_pc(DisasContext *s, TCGv_i64 src)
@@ -268,7 +272,7 @@ static void gen_a64_set_pc(DisasContext *s, TCGv_i64 src)
 TCGv_i64 clean_data_tbi(DisasContext *s, TCGv_i64 addr)
 {
     TCGv_i64 clean = tcg_temp_new_i64();
-#ifdef CONFIG_USER_ONLY
+#if defined(CONFIG_USER_ONLY) && !defined(CONFIG_JOVE)
     gen_top_byte_ignore(s, clean, addr, s->tbid);
 #else
     tcg_gen_mov_i64(clean, addr);
