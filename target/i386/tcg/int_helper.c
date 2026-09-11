@@ -442,7 +442,7 @@ void helper_cr4_testbit(CPUX86State *env, uint32_t bit)
 }
 
 target_ulong HELPER(rdrand)(CPUX86State *env)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 {
     uint64_t res;
     uint8_t valid = 0;

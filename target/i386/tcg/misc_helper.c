@@ -48,7 +48,7 @@ void helper_into(CPUX86State *env, int next_eip_addend)
 }
 
 void helper_cpuid(CPUX86State *env)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 {
     uint32_t index = env->regs[R_EAX];
     uint32_t count = env->regs[R_ECX];
@@ -81,7 +81,7 @@ void helper_cpuid(CPUX86State *env)
 #endif
 
 void helper_rdtsc(CPUX86State *env)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 {
     uint32_t tickl, tickh;
     asm volatile("rdtsc" : "=a"(tickl), "=d"(tickh));
@@ -105,7 +105,7 @@ void helper_rdtsc(CPUX86State *env)
 #endif
 
 G_NORETURN void helper_rdpmc(CPUX86State *env)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 {
     uint32_t counter = env->regs[R_ECX];
 
@@ -131,7 +131,7 @@ G_NORETURN void helper_rdpmc(CPUX86State *env)
 #endif
 
 G_NORETURN void helper_pause(CPUX86State *env)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 {
     asm volatile("pause");
 }
@@ -176,11 +176,11 @@ void helper_wrpkru(CPUX86State *env, uint32_t ecx, uint64_t val)
     tlb_flush(cs);
 }
 
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 __attribute__((__always_inline__, __nodebug__, __target__("rdpid")))
 #endif
 target_ulong HELPER(rdpid)(CPUX86State *env)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && (defined(__x86_64__) || defined(__i386__))
 {
   return __builtin_ia32_rdpid();
 }
