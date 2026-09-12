@@ -688,6 +688,7 @@ static int parse_args(int argc, char **argv)
 #ifdef CONFIG_JOVE_HELPERS
 static void _jove_print_tcg_constants(void);
 void _jove_dump_env(CPUArchState *);
+void _jove_print_helpers(void);
 #endif
 
 #ifdef CONFIG_JOVE
@@ -1125,6 +1126,8 @@ int main(int argc, char **argv, char **envp)
 void _jove_do_print_tcg_constants(unsigned taddr_bits,
                                   const char *const *callconv_args,
                                   const char *const *callconv_rets,
+                                  const char *const *syscall_args,
+                                  const char *const *syscall_rets,
                                   const char *const *not_args,
                                   const char *const *not_rets,
                                   const char *const *pinned,
@@ -1136,6 +1139,7 @@ void _jove_print_tcg_constants(void) {
       {"program_counter", "rip"},
       {"frame_pointer", "rbp"},
       {"stack_pointer", "rsp"},
+      {"syscall_nr", "rax"},
       {"fs_base", "fs_base"},
       {"gs_base", "gs_base"},
       {"rax", "rax"},
@@ -1143,6 +1147,7 @@ void _jove_print_tcg_constants(void) {
       {"program_counter", "eip"},
       {"frame_pointer", "ebp"},
       {"stack_pointer", "esp"},
+      {"syscall_nr", "eax"},
       {"fs_base", "fs_base"},
       {"gs_base", "gs_base"},
       {"eax", "eax"},
@@ -1150,6 +1155,7 @@ void _jove_print_tcg_constants(void) {
       {"program_counter", "PC"},
       {"frame_pointer", "s8"},
       {"stack_pointer", "sp"},
+      {"syscall_nr", "v0"},
       {"t9", "t9"},
       {"ra", "ra"},
       {"lladdr", "lladdr"},
@@ -1158,6 +1164,7 @@ void _jove_print_tcg_constants(void) {
       {"program_counter", "PC"},
       {"frame_pointer", "s8"},
       {"stack_pointer", "sp"},
+      {"syscall_nr", "v0"},
       {"t9", "t9"},
       {"ra", "ra"},
       {"btarget", "btarget"},
@@ -1167,6 +1174,7 @@ void _jove_print_tcg_constants(void) {
       {"program_counter", "PC"}, /* made uppercase to distinguish */
       {"frame_pointer", "x29"},
       {"stack_pointer", "sp"},
+      {"syscall_nr", "x8"},
 #else
 #error
 #endif
@@ -1197,6 +1205,38 @@ void _jove_print_tcg_constants(void) {
       "v0", "v1",
 #elif defined(TARGET_AARCH64)
       "x0", "x1",
+#else
+#error
+#endif
+      NULL};
+
+  static const char *const syscall_args[] = {
+#if defined(TARGET_X86_64)
+      "rdi", "rsi", "rdx", "r10", "r8", "r9",
+#elif defined(TARGET_I386)
+      "ebx", "ecx", "edx", "esi", "edi", "ebp",
+#elif defined(TARGET_MIPS64)
+      "a0", "a1", "a2", "a3", "t0", "t1",
+#elif defined(TARGET_MIPS)
+      "a0", "a1", "a2", "a3", /* last two args are on stack */
+#elif defined(TARGET_AARCH64)
+      "x0", "x1", "x2", "x3", "x4", "x5",
+#else
+#error
+#endif
+      NULL};
+
+  static const char *const syscall_rets[] = {
+#if defined(TARGET_X86_64)
+      "rax",
+#elif defined(TARGET_I386)
+      "eax",
+#elif defined(TARGET_MIPS64)
+      "a3" /* (r7) */, "v0" /* (r2) */,
+#elif defined(TARGET_MIPS)
+      "a3" /* (r7) */, "v0" /* (r2) */,
+#elif defined(TARGET_AARCH64)
+      "x0",
 #else
 #error
 #endif
@@ -1448,6 +1488,8 @@ void _jove_print_tcg_constants(void) {
   _jove_do_print_tcg_constants(TARGET_LONG_BITS,
                                &callconv_args[0],
                                &callconv_rets[0],
+                               &syscall_args[0],
+                               &syscall_rets[0],
                                &not_arg_regs[0],
                                &not_ret_regs[0],
                                &pinned[0],

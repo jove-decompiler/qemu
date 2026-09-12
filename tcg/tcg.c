@@ -2122,6 +2122,8 @@ static unsigned _jove_load_global_set(TCGContext *s,
 void _jove_do_print_tcg_constants(unsigned taddr_bits,
                                   const char *const *callconv_args,
                                   const char *const *callconv_rets,
+                                  const char *const *syscall_args,
+                                  const char *const *syscall_rets,
                                   const char *const *not_args,
                                   const char *const *not_rets,
                                   const char *const *pinned,
@@ -2175,6 +2177,35 @@ void _jove_do_print_tcg_constants(unsigned taddr_bits,
 
     printf("static const CallConvRetArrayTy CallConvRetArray{");
     _jove_print_globals_as_array(s, callconv_rets);
+    printf("};\n");
+  }
+
+
+  {
+    jove_glbs_t args = JOVE_GLBS_INIT;
+
+    unsigned target_num_syscall_args = _jove_load_global_set(s, &args, syscall_args);
+    _jove_print_global_set(s, "SyscallArgs", &args);
+
+    printf("typedef std::array<unsigned, %u> SyscallArgArrayTy;\n",
+           target_num_syscall_args);
+
+    printf("static const SyscallArgArrayTy SyscallArgArray{");
+    _jove_print_globals_as_array(s, syscall_args);
+    printf("};\n");
+  }
+
+  {
+    jove_glbs_t rets = JOVE_GLBS_INIT;
+
+    unsigned target_num_syscall_rets = _jove_load_global_set(s, &rets, syscall_rets);
+    _jove_print_global_set(s, "SyscallRets", &rets);
+
+    printf("typedef std::array<unsigned, %u> SyscallRetArrayTy;\n",
+           target_num_syscall_rets);
+
+    printf("static const SyscallRetArrayTy SyscallRetArray{");
+    _jove_print_globals_as_array(s, syscall_rets);
     printf("};\n");
   }
 
