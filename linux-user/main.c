@@ -1089,6 +1089,9 @@ int main(int argc, char **argv, char **envp)
     if (getenv("JOVE_PRINT_CONSTANTS")) {
       _jove_print_tcg_constants();
       exit(EXIT_SUCCESS);
+    } else if (getenv("JOVE_PRINT_HELPERS")) {
+      _jove_print_helpers();
+      exit(EXIT_SUCCESS);
     } else if (getenv("JOVE_DUMP_ENV")) {
       ; /* we dump on the first call to tcg_qemu_tb_exec() */
     } else {

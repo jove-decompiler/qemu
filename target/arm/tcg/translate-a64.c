@@ -27,6 +27,8 @@
 
 #ifdef CONFIG_JOVE
 #include "jove.h"
+#elif defined(CONFIG_JOVE_HELPERS)
+#include "exec/jove_helpers.c.inc"
 #endif
 
 static TCGv_i64 cpu_X[32];

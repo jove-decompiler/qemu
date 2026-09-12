@@ -41,6 +41,8 @@
 
 #ifdef CONFIG_JOVE
 #include "jove.h"
+#elif defined(CONFIG_JOVE_HELPERS)
+#include "exec/jove_helpers.c.inc"
 #endif
 
 /* Fixes for Windows namespace pollution.  */
