@@ -3562,6 +3562,10 @@ const char *jv_tcg_find_helper(void *p) {
   return info->name;
 }
 
+void *jv_tcg_helper_func(void *Op) {
+  return tcg_call_func((TCGOp *)Op);
+}
+
 const char *jv_tcg_get_arg_str(char *buf, int buf_size, uint64_t arg) {
   TCGArg Arg = arg;
   return tcg_get_arg_str(tcg_ctx, buf, buf_size, Arg);

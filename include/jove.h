@@ -18,6 +18,7 @@ JV_FUNC_ATTR int jv_tcgopc_nb_cargs_in_def(unsigned opc);
 JV_FUNC_ATTR const char *jv_tcgopc_name_in_def(unsigned opc);
 
 JV_FUNC_ATTR const char *jv_tcg_find_helper(void *);
+JV_FUNC_ATTR void *jv_tcg_helper_func(void *);
 
 JV_FUNC_ATTR const char *jv_tcg_get_arg_str(char *buf, int buf_size,
                                             uint64_t arg);
