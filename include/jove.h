@@ -49,6 +49,8 @@ JV_FUNC_ATTR void jv_set_end_pc(uint64_t);
 
 JV_FUNC_ATTR void jv_illegal_op(uint64_t PC);
 
+JV_FUNC_ATTR void *const *jv_special_helpers(void);
+
 //
 // x86 specific
 //
