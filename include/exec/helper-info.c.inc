@@ -9,6 +9,17 @@
 #include "tcg/helper-info.h"
 #include "exec/helper-head.h.inc"
 
+#ifdef CONFIG_JOVE
+#ifndef JOVE_ARE_CORE_HELPERS
+#define JOVE_ARE_CORE_HELPERS 0
+#endif
+
+#define JOVE_STUFF                                                             \
+        .number = JOVE_ARE_CORE_HELPERS*512 + __COUNTER__,
+#else
+#define JOVE_STUFF
+#endif
+
 /*
  * Need one more level of indirection before stringification
  * to get all the macros expanded first.
@@ -17,6 +28,7 @@
 
 #define DEF_HELPER_FLAGS_0(NAME, FLAGS, RET)                            \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0)                                 \
@@ -24,6 +36,7 @@
 
 #define DEF_HELPER_FLAGS_1(NAME, FLAGS, RET, T1)                        \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -31,6 +44,7 @@
 
 #define DEF_HELPER_FLAGS_2(NAME, FLAGS, RET, T1, T2)                    \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -39,6 +53,7 @@
 
 #define DEF_HELPER_FLAGS_3(NAME, FLAGS, RET, T1, T2, T3)                \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -47,6 +62,7 @@
 
 #define DEF_HELPER_FLAGS_4(NAME, FLAGS, RET, T1, T2, T3, T4)            \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -56,6 +72,7 @@
 
 #define DEF_HELPER_FLAGS_5(NAME, FLAGS, RET, T1, T2, T3, T4, T5)        \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -65,6 +82,7 @@
 
 #define DEF_HELPER_FLAGS_6(NAME, FLAGS, RET, T1, T2, T3, T4, T5, T6)    \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -75,6 +93,7 @@
 
 #define DEF_HELPER_FLAGS_7(NAME, FLAGS, RET, T1, T2, T3, T4, T5, T6, T7) \
     TCGHelperInfo glue(helper_info_, NAME) = {                          \
+                                                             JOVE_STUFF \
         .func = HELPER(NAME), .name = str(NAME),                        \
         .flags = FLAGS | dh_callflag(RET),                              \
         .typemask = dh_typemask(RET, 0) | dh_typemask(T1, 1)            \
@@ -84,6 +103,10 @@
     };
 
 #include HELPER_H
+
+#ifdef CONFIG_JOVE
+#undef JOVE_STUFF
+#endif
 
 #undef str
 #undef DEF_HELPER_FLAGS_0

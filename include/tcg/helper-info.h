@@ -44,6 +44,10 @@ typedef struct TCGCallArgumentLoc {
 } TCGCallArgumentLoc;
 
 struct TCGHelperInfo {
+#if defined(CONFIG_JOVE)
+    unsigned number;
+#endif
+
     void *func;
     const char *name;
 

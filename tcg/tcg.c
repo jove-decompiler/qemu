@@ -2119,6 +2119,8 @@ static unsigned _jove_load_global_set(TCGContext *s,
   return res;
 }
 
+unsigned _jove_helper_count(void);
+
 void _jove_do_print_tcg_constants(unsigned taddr_bits,
                                   const char *const *callconv_args,
                                   const char *const *callconv_rets,
@@ -2151,6 +2153,7 @@ void _jove_do_print_tcg_constants(unsigned taddr_bits,
   printf("typedef std::bitset<tcg_num_globals> tcg_global_set_t;\n");
   printf("constexpr unsigned tcg_max_temps(%uu);\n", (unsigned)TCG_MAX_TEMPS);
 
+  printf("constexpr unsigned tcg_helper_count(%u);\n", _jove_helper_count());
 
   {
     jove_glbs_t args = JOVE_GLBS_INIT;
@@ -3554,16 +3557,15 @@ const char *jv_tcgopc_name_in_def(unsigned opc) {
   return tcg_op_defs[opc].name;
 }
 
-const char *jv_tcg_find_helper(void *p) {
-  TCGOp *op = (TCGOp *)p;
-  assert(op->opc == INDEX_op_call);
+void *jv_tcg_helper_info(void *op) {
+  assert(((TCGOp *)op)->opc == INDEX_op_call);
 
-  const TCGHelperInfo *info = tcg_call_info(op);
-  return info->name;
+  const TCGHelperInfo *info = tcg_call_info((TCGOp *)op);
+  return info;
 }
 
-void *jv_tcg_helper_func(void *Op) {
-  return tcg_call_func((TCGOp *)Op);
+void *jv_tcg_helper_func(void *op) {
+  return tcg_call_func((TCGOp *)op);
 }
 
 const char *jv_tcg_get_arg_str(char *buf, int buf_size, uint64_t arg) {

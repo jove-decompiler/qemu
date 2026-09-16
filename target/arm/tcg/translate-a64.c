@@ -29,10 +29,6 @@
 #include "jove.h"
 #endif
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
-#include "exec/jove_helpers.c.inc"
-#endif
-
 static TCGv_i64 cpu_X[32];
 static TCGv_i64 cpu_gcspr[4];
 static TCGv_i64 cpu_pc;

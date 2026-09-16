@@ -22,6 +22,11 @@
  * THE SOFTWARE.
  */
 #include "qemu/osdep.h"
+
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define JOVE_ARE_CORE_HELPERS 1
+#endif
+
 #include "qemu/host-utils.h"
 #include "exec/cpu-common.h"
 #include "exec/helper-proto-common.h"
@@ -30,6 +35,12 @@
 #define HELPER_H  "accel/tcg/tcg-runtime.h"
 #include "exec/helper-info.c.inc"
 #undef  HELPER_H
+
+#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
+#define HELPER_H  "accel/tcg/tcg-runtime.h"
+#include "exec/jove_all_helpers.c.inc"
+#undef  HELPER_H
+#endif
 
 /* 32-bit helpers */
 
