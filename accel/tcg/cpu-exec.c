@@ -48,6 +48,8 @@
 #include "internal-common.h"
 
 #ifdef CONFIG_JOVE_HELPERS
+#include "tcg/helper-info.h"
+
 extern __thread CPUState *thread_cpu;
 
 void ____copyme_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
@@ -74,6 +76,7 @@ void ____copyme_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
   (void)MO_UQ;
   (void)TCG_TARGET_REG_BITS;
   (void)TCG_COND_NE;
+  (void)(TCGHelperInfo *)NULL;
 
 #ifdef TCG_GUEST_DEFAULT_MO
   (void)TCG_GUEST_DEFAULT_MO;
