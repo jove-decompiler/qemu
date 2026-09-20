@@ -35,6 +35,13 @@
 #include "internals.h"
 #include "cpu-features.h"
 
+#ifdef CONFIG_JOVE_HELPERS
+void ____copyme_env(CPUARMState *env) {
+  (void)(target_ulong)0;
+  (void)env->xregs;
+}
+#endif
+
 /* convert between <register>_IDX and SYS_<register> */
 #define DEF(NAME, OP0, OP1, CRN, CRM, OP2)      \
     [NAME##_IDX] = SYS_##NAME,
