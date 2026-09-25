@@ -42,6 +42,14 @@ void ____copyme_env(CPUARMState *env) {
 }
 #endif
 
+#ifdef CONFIG_JOVE
+void _jv_alter_cpu(CPUState *cs) {
+  ARMCPU *cpu = ARM_CPU(cs);
+
+  FIELD_DP64_IDREG(&cpu->isar, ID_AA64PFR1, BT, 0); /* no BTI please */
+}
+#endif
+
 /* convert between <register>_IDX and SYS_<register> */
 #define DEF(NAME, OP0, OP1, CRN, CRM, OP2)      \
     [NAME##_IDX] = SYS_##NAME,

@@ -58,6 +58,10 @@ void ____copyme_env(CPUX86State *env) {
 }
 #endif
 
+#ifdef CONFIG_JOVE
+void _jv_alter_cpu(CPUState *cs) {}
+#endif
+
 static void x86_cpu_realizefn(DeviceState *dev, Error **errp);
 static void x86_cpu_get_supported_cpuid(uint32_t func, uint32_t index,
                                         uint32_t *eax, uint32_t *ebx,

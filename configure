@@ -995,6 +995,8 @@ $mkvenv ensuregroup --dir "${source_path}/python/wheels" \
 # We ignore PATH completely here: we want to use the venv's Meson
 # *exclusively*.
 
+patch ./pyvenv/lib/python3.11/site-packages/mesonbuild/compilers/mixins/clike.py -i ~/jove/patches/meson.diff
+
 # for msys2
 get_pwd() {
     if pwd -W >/dev/null 2>&1; then

@@ -709,6 +709,8 @@ CPUArchState *jv_new_cpu_state(void)
     return new_env;
 }
 
+void _jv_alter_cpu(CPUState *);
+
 bool jv_is_mips_target =
 #ifdef TARGET_MIPS
     true
@@ -1114,6 +1116,7 @@ int main(int argc, char **argv, char **envp)
       jv_cpu_init = init_cpu;
 
       memcpy(init_cpu, cpu, sizeof(struct ArchCPU));
+      _jv_alter_cpu(init_cpu);
     }
 
     __jove_did = true; /* we got here */

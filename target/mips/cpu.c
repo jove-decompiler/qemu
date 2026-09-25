@@ -43,6 +43,10 @@ void ____copyme_env(CPUMIPSState *env) {
 }
 #endif
 
+#ifdef CONFIG_JOVE
+void _jv_alter_cpu(CPUState *cs) {}
+#endif
+
 const char regnames[32][3] = {
     "r0", "at", "v0", "v1", "a0", "a1", "a2", "a3",
     "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
