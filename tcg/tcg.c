@@ -1298,9 +1298,11 @@ void tcg_register_thread(void)
     unsigned int i, n;
 
     {
-      TCGContext *const s = tcg_ctx;
-      if (s)
-        assert(s == &tcg_init_ctx);
+      TCGContext *const curr_s = tcg_ctx;
+      if (curr_s)
+        assert(curr_s == &tcg_init_ctx);
+      else
+        assert(!thread_cpu);
     }
 
     *s = tcg_init_ctx;
