@@ -7,7 +7,7 @@ const void *const *jv_special_helpers(void) {
 #elif defined(TARGET_I386)
     &helper_raise_interrupt
 #elif defined(TARGET_AARCH64)
-    &helper_info_exception_with_syndrome.func
+    &helper_exception_with_syndrome
 #elif defined(TARGET_MIPS64) || defined(TARGET_MIPS)
     &helper_raise_exception_err
 #else
