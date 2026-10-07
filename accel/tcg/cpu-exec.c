@@ -47,10 +47,10 @@
 #include "tb-internal.h"
 #include "internal-common.h"
 
+extern __thread CPUState *thread_cpu;
+
 #ifdef CONFIG_JOVE_HELPERS
 #include "tcg/helper-info.h"
-
-extern __thread CPUState *thread_cpu;
 
 void ____copyme_tcg(TCGContext *s, TCGOp *op, TCGArg a) {
   (void)((CPUState *)1)->cc->tcg_ops->translate_code(NULL, NULL, NULL, 0, NULL);
