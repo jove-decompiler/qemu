@@ -512,7 +512,7 @@ static inline size_t temp_idx(TCGTemp *ts)
  */
 static inline TCGTemp *tcgv_i32_temp(TCGv_i32 v)
 {
-    return (void *)tcg_ctx + (uintptr_t)v;
+    return (TCGTemp *)((char *)tcg_ctx + (uintptr_t)v);
 }
 #endif
 
