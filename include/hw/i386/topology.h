@@ -42,11 +42,7 @@
 #include "qapi/qapi-types-machine-common.h"
 #include "qemu/bitops.h"
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
 #define JOVE_MS_STRUCT __attribute__((ms_struct))
-#else
-#define JOVE_MS_STRUCT
-#endif
 
 /*
  * APIC IDs can be 32-bit, but beware: APIC IDs > 255 require x2APIC support

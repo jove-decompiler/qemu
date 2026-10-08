@@ -82,11 +82,7 @@ this code that are retained.
 
 #include "hw/registerfields.h"
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
 #define JOVE_MS_STRUCT __attribute__((ms_struct))
-#else
-#define JOVE_MS_STRUCT
-#endif
 
 /*
  * Software IEC/IEEE floating-point types.

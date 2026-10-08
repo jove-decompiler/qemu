@@ -14,11 +14,7 @@
 #ifndef MEMATTRS_H
 #define MEMATTRS_H
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
 #define JOVE_MS_STRUCT __attribute__((ms_struct))
-#else
-#define JOVE_MS_STRUCT
-#endif
 
 /* Every memory transaction has associated with it a set of
  * attributes. Some of these are generic (such as the ID of

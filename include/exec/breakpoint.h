@@ -12,11 +12,7 @@
 #include "exec/vaddr.h"
 #include "exec/memattrs.h"
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
 #define JOVE_MS_STRUCT __attribute__((ms_struct))
-#else
-#define JOVE_MS_STRUCT
-#endif
 
 typedef struct JOVE_MS_STRUCT CPUBreakpoint {
     vaddr pc;

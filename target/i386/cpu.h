@@ -83,11 +83,7 @@ typedef enum X86Seg {
     R_TR = 7,
 } X86Seg;
 
-#if defined(CONFIG_JOVE) || defined(CONFIG_JOVE_HELPERS)
 #define JOVE_MS_STRUCT __attribute__((ms_struct))
-#else
-#define JOVE_MS_STRUCT
-#endif
 
 /* segment descriptor fields */
 #define DESC_G_SHIFT    23
