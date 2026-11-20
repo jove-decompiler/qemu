@@ -158,35 +158,26 @@ void mulu64 (uint64_t *plow, uint64_t *phigh, uint64_t a, uint64_t b)
 
 #endif
 
-#undef g_assert_not_reached
-#undef g_assertion_message_expr
-#undef __assert_fail
-
 extern __attribute__((__noreturn__)) void _jove_assert_fail(const char *file,
                                                             unsigned line,
                                                             void *retaddr);
 
-__attribute__((__nothrow__))
-__attribute__((__noreturn__))
-__attribute__((always_inline))
-void
-__assert_fail(const char *__assertion, const char *__file, unsigned int __line,
-              const char *__function) {
-  _jove_assert_fail(__file, __line, __builtin_return_address (0u));
-}
-
-__attribute__((__nothrow__))
-__attribute__((__noreturn__))
-__attribute__((always_inline))
-void
-g_assertion_message_expr(const char *domain, const char *file, int line,
-                         const char *func, const char *expr) {
-  _jove_assert_fail(file, line, __builtin_return_address (0u));
-}
-
+#undef g_assert_not_reached
 #define g_assert_not_reached()                                                 \
   do {                                                                         \
-    _jove_assert_fail(__FILE__, __LINE__, __builtin_return_address (0u));      \
+    _jove_assert_fail(__FILE__, __LINE__, __builtin_return_address(0u));       \
+  } while (0)
+
+#undef g_assertion_message_expr
+#define g_assertion_message_expr(...)\
+  do {                                                                         \
+    g_assert_not_reached();                                                    \
+  } while (0)
+
+#undef __assert_fail
+#define __assert_fail(...)                                                     \
+  do {                                                                         \
+    g_assert_not_reached();                                                    \
   } while (0)
 
 #undef memset
