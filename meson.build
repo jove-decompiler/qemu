@@ -3916,7 +3916,7 @@ if 'CONFIG_TCG' in config_all_accel
   subdir('contrib/plugins')
 endif
 
-common_user_inc = []
+common_user_inc = ['../lib']
 
 subdir('common-user')
 subdir('bsd-user')

@@ -533,15 +533,93 @@ void HELPER(exception_with_syndrome_el)(CPUARMState *env, uint32_t excp,
  * Raise an exception with the specified syndrome register value
  * to the default target el.
  */
+#ifdef CONFIG_JOVE_HELPERS
+#ifndef __aarch64__
+#error
+#endif
+
+#define JOVE_SYSCALL_NO_PARAM_TYPES
+#define JOVE_SYS_ATTR __attribute__((noinline))
+#include "../../../../jove/lib/arch/aarch64/jove_sys.h"
+
 void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
                                      uint32_t syndrome)
-#ifdef CONFIG_JOVE_HELPERS
 {
-    (void)EXCP_SWI;
+  if (excp != EXCP_SWI) {
+    __builtin_trap();
+    __builtin_unreachable();
+  }
 
-#include "jove_do_syscall.h"
+  const unsigned sysnum = env->xregs[8];
+
+  const __auto_type _a1 = env->xregs[0];
+  const __auto_type _a2 = env->xregs[1];
+  const __auto_type _a3 = env->xregs[2];
+  const __auto_type _a4 = env->xregs[3];
+  const __auto_type _a5 = env->xregs[4];
+  const __auto_type _a6 = env->xregs[5];
+
+  unsigned long sysret;
+  switch (sysnum) {
+  default: {
+#if 0
+    char buff[65];
+    _uint_to_string(sysnum, buff, 10);
+    _strcat(buff, ")\n");
+
+    _DUMP(buff);
+
+    __builtin_trap();
+    __builtin_unreachable();
+#endif
+    __builtin_trap();
+    __builtin_unreachable();
+  }
+
+#define ___SYSCALL0(nr, nm)                                                    \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm();                                                 \
+    break;
+
+#define ___SYSCALL1(nr, nm, t1, a1)                                            \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm(_a1);                                              \
+    break;
+
+#define ___SYSCALL2(nr, nm, t1, a1, t2, a2)                                    \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm(_a1, _a2);                                         \
+    break;
+
+#define ___SYSCALL3(nr, nm, t1, a1, t2, a2, t3, a3)                            \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm(_a1, _a2, _a3);                                    \
+    break;
+
+#define ___SYSCALL4(nr, nm, t1, a1, t2, a2, t3, a3, t4, a4)                    \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm(_a1, _a2, _a3, _a4);                               \
+    break;
+
+#define ___SYSCALL5(nr, nm, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5)            \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm(_a1, _a2, _a3, _a4, _a5);                          \
+    break;
+
+#define ___SYSCALL6(nr, nm, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5, t6, a6)    \
+  case nr:                                                                     \
+    sysret = _jove_sys_##nm(_a1, _a2, _a3, _a4, _a5, _a6);                     \
+    break;
+
+#define JOVE_SYSCALL_NO_PARAM_TYPES
+#include "../../../../jove/lib/arch/aarch64/syscalls.inc.h"
+  }
+
+  env->xregs[0] = sysret;
 }
 #else
+void HELPER(exception_with_syndrome)(CPUARMState *env, uint32_t excp,
+                                     uint32_t syndrome)
 {
     raise_exception(env, excp, syndrome, exception_target_el(env));
 }
