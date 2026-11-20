@@ -2921,12 +2921,40 @@ static void handle_sys(DisasContext *s, bool isread,
         ri = redirect_cpreg(s, key, isread);
     }
 
+#ifdef CONFIG_JOVE
+//  fprintf(stderr, "ENCODE_AA64_CP_REG(%u, %u, %u, %u, %u)\n", op0, op1, crn, crm, op2);
+
+    unsigned jove_read = 0;
+    unsigned jove_write = 0;
+    intptr_t jove_special_key = INT32_MAX;
+    switch (key) {
+#define JOVE_AARCH64_SYSREG(isr, isw, idx, name, ...)                          \
+    case ENCODE_AA64_CP_REG(__VA_ARGS__):                                      \
+      jove_read = isr;                                                         \
+      jove_write = isw;                                                        \
+      jove_special_key -= idx;                                                 \
+      break;
+#define JOVE_AARCH64_SYSREG_R(...)  JOVE_AARCH64_SYSREG(1, 0, __VA_ARGS__)
+#define JOVE_AARCH64_SYSREG_W(...)  JOVE_AARCH64_SYSREG(0, 1, __VA_ARGS__)
+#define JOVE_AARCH64_SYSREG_RW(...) JOVE_AARCH64_SYSREG(1, 1, __VA_ARGS__)
+#include "jove_aarch64_sysregs.c.inc"
+#undef JOVE_AARCH64_SYSREG
+
+    default:
+      break;
+    }
+#endif
+
     if (ri->accessfn || (ri->fgt && s->fgt_active)) {
         /* Emit code to perform further access permissions checks at
          * runtime; this may result in an exception.
          */
         gen_a64_update_pc(s, 0);
         tcg_ri = tcg_temp_new_ptr();
+
+#ifdef CONFIG_JOVE
+        if (jove_special_key == INT32_MAX)
+#endif
         gen_helper_access_check_cp_reg(tcg_ri, tcg_env,
                                        tcg_constant_i32(key),
                                        tcg_constant_i32(syndrome),
@@ -3145,6 +3173,11 @@ static void handle_sys(DisasContext *s, bool isread,
     tcg_rt = cpu_reg(s, rt);
 
     if (isread) {
+#ifdef CONFIG_JOVE
+        if (jove_special_key != INT32_MAX && jove_read) {
+          gen_helper_get_cp_reg64(tcg_rt, tcg_env, tcg_constant_ptr_int(jove_special_key));
+        } else
+#endif
         if (ri->type & ARM_CP_CONST) {
             tcg_gen_movi_i64(tcg_rt, ri->resetvalue);
         } else if (ri->readfn) {
@@ -3156,6 +3189,11 @@ static void handle_sys(DisasContext *s, bool isread,
             tcg_gen_ld_i64(tcg_rt, tcg_env, ri->fieldoffset);
         }
     } else {
+#ifdef CONFIG_JOVE
+        if (jove_special_key != INT32_MAX && jove_write) {
+          gen_helper_set_cp_reg64(tcg_env, tcg_constant_ptr_int(jove_special_key), tcg_rt);
+        } else
+#endif
         if (ri->type & ARM_CP_CONST) {
             /* If not forbidden by access permissions, treat as WI */
             return;

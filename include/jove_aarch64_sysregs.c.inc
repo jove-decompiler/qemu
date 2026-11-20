@@ -1,0 +1,17 @@
+#if !defined(JOVE_AARCH64_SYSREG_R) || \
+    !defined(JOVE_AARCH64_SYSREG_W) || \
+    !defined(JOVE_AARCH64_SYSREG_RW)
+#error
+#endif
+
+JOVE_AARCH64_SYSREG_R(1, "ctr_el0", 3, 3, 0, 0, 1)
+JOVE_AARCH64_SYSREG_R(2, "S3_3_C13_C0_5", 3, 3, 13, 0, 5)
+JOVE_AARCH64_SYSREG_R(3, "dczid_el0", 3, 3, 0, 0, 7)
+JOVE_AARCH64_SYSREG_RW(4, "fpcr", 3, 3, 4, 4, 0)
+JOVE_AARCH64_SYSREG_RW(5, "fpsr", 3, 3, 4, 4, 1)
+JOVE_AARCH64_SYSREG_R(6, "S3_3_C2_C5_1", 3, 3, 2, 5, 1)
+JOVE_AARCH64_SYSREG_R(7, "tpidr_el0", 3, 3, 13, 0, 2)
+
+#undef JOVE_AARCH64_SYSREG_R
+#undef JOVE_AARCH64_SYSREG_W
+#undef JOVE_AARCH64_SYSREG_RW

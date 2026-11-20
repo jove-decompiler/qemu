@@ -1047,10 +1047,23 @@ uint32_t HELPER(get_cp_reg)(CPUARMState *env, const void *rip)
 #endif
 
 void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
-#ifdef CONFIG_JOVE_HELPERS
+#if defined(CONFIG_JOVE_HELPERS) && defined(__aarch64__)
 {
-    __builtin_trap();
-    __builtin_unreachable();
+    int32_t key = (int32_t)((intptr_t)rip);
+    switch (key) {
+#define JOVE_AARCH64_SYSREG(idx, name, ...)                                    \
+    case INT32_MAX - idx:                                                      \
+      asm("msr " name ", %0" : : "r"(value));                                  \
+      break;
+#define JOVE_AARCH64_SYSREG_R(...)
+#define JOVE_AARCH64_SYSREG_RW(...) JOVE_AARCH64_SYSREG(__VA_ARGS__)
+#define JOVE_AARCH64_SYSREG_W(...)  JOVE_AARCH64_SYSREG(__VA_ARGS__)
+#include "jove_aarch64_sysregs.c.inc"
+#undef JOVE_AARCH64_SYSREG
+    default:
+      __builtin_trap();
+      __builtin_unreachable();
+    }
 }
 #else
 {
@@ -1071,15 +1084,23 @@ void HELPER(set_cp_reg64)(CPUARMState *env, const void *rip, uint64_t value)
 uint64_t HELPER(get_cp_reg64)(CPUARMState *env, const void *rip)
 #if defined(CONFIG_JOVE_HELPERS) && defined(__aarch64__)
 {
-    uint32_t key = (uint32_t)((uintptr_t)rip);
-    if (key == 0x1013d807) {
-        uint64_t res;
-        asm volatile("mrs %0, dczid_el0" : "=r"(res));
-        return res;
+    uint64_t res;
+    int32_t key = (int32_t)((intptr_t)rip);
+    switch (key) {
+#define JOVE_AARCH64_SYSREG(idx, name, ...)                                    \
+    case INT32_MAX - idx:                                                      \
+      asm("mrs %0, " name : "=r"(res));                                        \
+      break;
+#define JOVE_AARCH64_SYSREG_R(...)  JOVE_AARCH64_SYSREG(__VA_ARGS__)
+#define JOVE_AARCH64_SYSREG_RW(...) JOVE_AARCH64_SYSREG(__VA_ARGS__)
+#define JOVE_AARCH64_SYSREG_W(...)
+#include "jove_aarch64_sysregs.c.inc"
+#undef JOVE_AARCH64_SYSREG
+    default:
+      __builtin_trap();
+      __builtin_unreachable();
     }
-
-    __builtin_trap();
-    __builtin_unreachable();
+    return res;
 }
 #else
 {
